@@ -3,19 +3,39 @@ A CLI for scoring student participation in an open-source class repo, implemente
 
 **주의**: 처음 만들 때 dotnet 7.0으로 환경을 설정했다 8.0으로 설정을 바꿨기 때문에 그 이전에 Codespace를 생성한 경우 코드스페이스 vscode 에디터에서 `Ctrl-Shift-P`를 누르고 rebuild로 검색해서 Codespace rebuild를 선택하면 8.0 환경으로 다시 가상머신이 만들어집니다. (단, 기존에 컨테이너 안에 있는 파일들은 깃헙에 push하지 않은 내용들 중에 필요한 게 있으면 혹시 모르니 백업해 놓아야 ...)
 
-## CLI 유틸리티 실행 방법
+## Usage
+아래는 `dotnet run -- -h` 또는 `dotnet run -- -help`실행 결과를 붙여넣은 것이므로 명령줄 관련 코드가 변경되면 아래 내용도 그에 맞게 수정해야 함.
+
+```bash
+Usage: reposcore-cs [--verbose] [--output <String>] [--format <String>...] [--token <String>] [--help] [--version] repos0 ... reposN
+
+reposcore-cs
+
+Arguments:
+  0: repos    분석할 저장소. "ower/repo" 형식으로 공백을 구분자로 하여 여러 개 입력 (Required)
+
+Options:
+  -v, --verbose               자세한 로그 출력을 활성화합니다.
+  -o, --output <String>       출력 디렉토리 경로를 지정합니다. (default : "result")
+  -f, --format <String>...    출력 형식 지정 ("text", "csv", "chart", "html", "all", default : "all")
+  -t, --token <String>        GitHub 액세스 토큰 입력
+  -h, --help                  Show help message
+  --version                   Show version
+```
+
+## CLI 유틸리티 실행 예시
 
 기본적인 명령행 인자 처리와 옵션을 다음과 같은 명령어로 시험삼아 실행해 볼 수 있습니다.
  
 ```bash
-dotnet run -- owner repo
-dotnet run -- owner repo --verbose
+dotnet run -- owner/repo
+dotnet run -- owner/repo --verbose
+dotnet run -- owner/repo -f csv -f text
 dotnet run -- --version
 dotnet run -- --help
 ```
 
 * 옵션 등을 정리해 나가는 단계이므로 실행 예시는 출력 결과가 계속해서 변경할 것이므로 일단 이전에 실행 예시 출력 결과들은 삭제하였음
-* 앞으로 다른 프로젝트처럼 -h나 --help 옵션으로 실행시켜 출력되는 시놉시스와 간단한 도움말이 자동으로 여기에 생성되는 방식으로 템플릿화 해야 함
 * 위 명령어들은 `reposcore-cs.csproj` 파일이 위치한 최상위 디렉토리(`reposcore-cs`)에서 실행해야 정상적으로 동작합니다.
 
 ---
