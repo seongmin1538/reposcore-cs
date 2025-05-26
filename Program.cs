@@ -1,10 +1,8 @@
 using Cocona;
-using System;
-using System.Collections.Generic;
-using Octokit;
 using DotNetEnv;
+using reposcore_cs.Services.GitHub;
 
-CoconaApp.Run((
+CoconaApp.Run(static (
     [Argument] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
     [Option('o', Description = "출력 디렉토리 경로를 지정합니다.")] string? output,
@@ -82,7 +80,6 @@ CoconaApp.Run((
             var outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
             var dataCollector = new RepoDataCollector(token!); // ✅ null-forgiving 연산자 적용
-            dataCollector.Collect(owner, repo, outputDir, formats);
 
             // ===== 파일 생성 기능 구현 후 제거 =====
             Console.WriteLine("\n===생성되는 포맷===");
