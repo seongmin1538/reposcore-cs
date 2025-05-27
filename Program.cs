@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using Octokit;
 using DotNetEnv;
 
+
+CoconaApp.Run(static(
+    [Argument] string[] repos,
 CoconaApp.Run((
-    [Argument(Description = "분석할 저장소. \"ower/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
+    [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
     [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"result\")")] string? output,
     [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")")] string[]? format,
@@ -82,7 +85,6 @@ CoconaApp.Run((
             var outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
             var dataCollector = new RepoDataCollector(token!); // ✅ null-forgiving 연산자 적용
-            dataCollector.Collect(owner, repo, outputDir, formats);
 
             // ===== 파일 생성 기능 구현 후 제거 =====
             Console.WriteLine("\n===생성되는 포맷===");
