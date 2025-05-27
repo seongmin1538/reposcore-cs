@@ -6,12 +6,13 @@ using DotNetEnv;
 
 
 CoconaApp.Run(static(
-    
     [Argument] string[] repos,
+CoconaApp.Run((
+    [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
-    [Option('o', Description = "출력 디렉토리 경로를 지정합니다.")] string? output,
-    [Option('t', Description = "GitHub Personal Access Token 입력")] string? token,
-    [Option('f', Description = "출력 형식을 지정합니다. (text, csv, chart, html, all)")] string[]? format
+    [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"result\")")] string? output,
+    [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")")] string[]? format,
+    [Option('t', Description = "GitHub 액세스 토큰 입력")] string? token
 ) =>
 {
     // 더미 데이타가 실제로 불러와 지는지 기본적으로 확인하기 위한 코드
