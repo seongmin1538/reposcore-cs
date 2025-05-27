@@ -28,8 +28,9 @@ Options:
 기본적인 명령행 인자 처리와 옵션을 다음과 같은 명령어로 시험삼아 실행해 볼 수 있습니다.
  
 ```bash
-dotnet run -- owner/repo
+dotnet run -- owner1/repo1 owner2/repo2 owner3/repo3
 dotnet run -- owner/repo --verbose
+dotnet run -- owner1/repo1 owner2/repo2 owner3/repo3 --verbose
 dotnet run -- owner/repo -f csv -f text
 dotnet run -- --version
 dotnet run -- --help
@@ -37,6 +38,7 @@ dotnet run -- --help
 
 * 옵션 등을 정리해 나가는 단계이므로 실행 예시는 출력 결과가 계속해서 변경할 것이므로 일단 이전에 실행 예시 출력 결과들은 삭제하였음
 * 위 명령어들은 `reposcore-cs.csproj` 파일이 위치한 최상위 디렉토리(`reposcore-cs`)에서 실행해야 정상적으로 동작합니다.
+* 다양한 저장소를 실행하는 명령어는 해당 프로젝트의 저장소가 3개이기 때문에 3개로 반영하였습니다.
 
 ---
 
