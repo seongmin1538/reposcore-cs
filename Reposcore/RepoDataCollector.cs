@@ -5,7 +5,6 @@ global using System.IO;
 global using System.Linq;
 
 // 현재 이름만 바꾼 거고 싹 다 재설계해야 함
-namespace reposcore_cs.Services.GitHub;
     public class RepoDataCollector(string token) // 1단계: 저장소에서 필요한 데이터를 가져오는 역할
     {
         private readonly GitHubClient _client = CreateClient("reposcore-cs", token);

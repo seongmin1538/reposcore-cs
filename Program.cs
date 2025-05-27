@@ -1,8 +1,12 @@
 using Cocona;
+using System;
+using System.Collections.Generic;
+using Octokit;
 using DotNetEnv;
-using reposcore_cs.Services.GitHub;
 
-CoconaApp.Run(static (
+
+CoconaApp.Run(static(
+    
     [Argument] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
     [Option('o', Description = "출력 디렉토리 경로를 지정합니다.")] string? output,
