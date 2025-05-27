@@ -1,12 +1,10 @@
-using Cocona;
+﻿using Cocona;
 using System;
 using System.Collections.Generic;
 using Octokit;
 using DotNetEnv;
 
 
-CoconaApp.Run(static(
-    [Argument] string[] repos,
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
