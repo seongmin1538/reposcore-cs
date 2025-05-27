@@ -5,8 +5,6 @@ using Octokit;
 using DotNetEnv;
 
 
-CoconaApp.Run(static(
-    [Argument] string[] repos,
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
@@ -62,12 +60,7 @@ CoconaApp.Run((
             var repository = client.Repository.Get(owner, repo).GetAwaiter().GetResult();
 
             Console.WriteLine($"[INFO] Repository Name: {repository.Name}");
-            Console.WriteLine($"[INFO] Full Name: {repository.FullName}");
             Console.WriteLine($"[INFO] Description: {repository.Description}");
-            Console.WriteLine($"[INFO] Stars: {repository.StargazersCount}");
-            Console.WriteLine($"[INFO] Forks: {repository.ForksCount}");
-            Console.WriteLine($"[INFO] Open Issues: {repository.OpenIssuesCount}");
-            Console.WriteLine($"[INFO] Language: {repository.Language}");
             Console.WriteLine($"[INFO] URL: {repository.HtmlUrl}");
         }
         catch (Exception e)
