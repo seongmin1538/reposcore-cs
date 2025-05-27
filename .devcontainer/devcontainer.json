@@ -7,6 +7,7 @@
         "ms-dotnettools.csharp",
         "ms-dotnettools.csdevkit",
         "mechatroner.rainbow-csv"
+        "ritwickdey.LiveServer"
       ]
     }
   },
