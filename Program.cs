@@ -26,25 +26,11 @@ CoconaApp.Run((
     RepoDataCollector.CreateClient(token);
 
     foreach (var repoPath in repos)
-    {
-        if (!repoPath.Contains('/'))
-        {
-            Console.WriteLine($"! 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
-            continue;
-        }
-
-        var parts = repoPath.Split('/');
-        if (parts.Length != 2)
-        {
-            Console.WriteLine($"! 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
-            continue;
-        }
-
-        string owner = parts[0];
-        string repo = parts[1];
+    {   
+        // repoPath 파싱 및 형식 검사 
+        var (owner,repo) = ParseRepoPath(repoPath);
 
         Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
-
         try
         {
             // collector 생성
@@ -175,4 +161,22 @@ static List<string> checkFormat(string[] format)
     }
 
     return validFormats;
+}
+
+static (string, string) ParseRepoPath(string repoPath)
+{
+    if (!repoPath.Contains('/'))
+    {
+        Console.WriteLine($"! 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
+        Environment.Exit(1);
+    }
+
+    var parts = repoPath.Split('/');
+    if (parts.Length != 2)
+    {
+        Console.WriteLine($"! 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
+        Environment.Exit(1);
+    }
+
+    return (parts[0], parts[1]);
 }
