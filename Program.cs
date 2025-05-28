@@ -19,6 +19,9 @@ CoconaApp.Run((
     var repo2Activities = DummyData.repo2Activities;
     Console.WriteLine("repo2Activities:" + repo2Activities.Count);
 
+    // 저장소별 라벨 통계 요약 정보를 저장할 리스트
+    var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
+
     foreach (var repoPath in repos)
     {
         if (!repoPath.Contains('/'))
@@ -66,19 +69,22 @@ CoconaApp.Run((
         catch (Exception e)
         {
             Console.WriteLine($"! 오류 발생: {e.Message}");
-            Environment.Exit(1);
+            continue;
         }
 
         try
         {
             var formats = format == null ?
-                new List<string> { "text", "csv", "chart", "html" } 
+                new List<string> { "text", "csv", "chart", "html" }
                 : checkFormat(format);
 
             var outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
             var dataCollector = new RepoDataCollector(token!); // ✅ null-forgiving 연산자 적용
+            var labelCounts = dataCollector.Collect(owner, repo, outputDir, formats);
 
+            // 저장소별 라벨 카운트를 요약 리스트에 추가
+            summaries.Add(($"{owner}/{repo}", labelCounts));
             // ===== 파일 생성 기능 구현 후 제거 =====
             Console.WriteLine("\n===생성되는 포맷===");
             foreach (var fm in formats)
@@ -91,14 +97,26 @@ CoconaApp.Run((
         catch (Exception ex)
         {
             Console.WriteLine($"! 오류 발생: {ex.Message}");
-            Environment.Exit(1);
+            continue;
         }
+    }
 
-        Environment.Exit(0);
+    // 전체 저장소 요약 테이블 출력
+    if (summaries.Count > 0)
+    {
+        Console.WriteLine("\n📊 전체 저장소 요약 통계");
+        Console.WriteLine("----------------------------------------------------");
+        Console.WriteLine($"{"Repo",-30} {"Bug",5} {"Doc",5} {"Enh",5}");
+        Console.WriteLine("----------------------------------------------------");
+
+        foreach (var (repoName, counts) in summaries)
+        {
+            Console.WriteLine($"{repoName,-30} {counts["bug"],5} {counts["documentation"],5} {counts["enhancement"],5}");
+        }
     }
 });
 
-static List<string> checkFormat(string[] format) 
+static List<string> checkFormat(string[] format)
 {
     var FormatList = new List<string> {"text", "csv", "chart", "html", "all"}; // 유효한 format
 
