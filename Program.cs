@@ -60,12 +60,7 @@ CoconaApp.Run((
             var repository = client.Repository.Get(owner, repo).GetAwaiter().GetResult();
 
             Console.WriteLine($"[INFO] Repository Name: {repository.Name}");
-            Console.WriteLine($"[INFO] Full Name: {repository.FullName}");
             Console.WriteLine($"[INFO] Description: {repository.Description}");
-            Console.WriteLine($"[INFO] Stars: {repository.StargazersCount}");
-            Console.WriteLine($"[INFO] Forks: {repository.ForksCount}");
-            Console.WriteLine($"[INFO] Open Issues: {repository.OpenIssuesCount}");
-            Console.WriteLine($"[INFO] Language: {repository.Language}");
             Console.WriteLine($"[INFO] URL: {repository.HtmlUrl}");
         }
         catch (Exception e)
