@@ -22,6 +22,9 @@ CoconaApp.Run((
     // 저장소별 라벨 통계 요약 정보를 저장할 리스트
     var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
 
+    // _client 초기화 
+    RepoDataCollector.CreateClient(token);
+
     foreach (var repoPath in repos)
     {
         if (!repoPath.Contains('/'))
@@ -44,27 +47,43 @@ CoconaApp.Run((
 
         try
         {
-            var client = new GitHubClient(new ProductHeaderValue("CoconaApp"));
+            // collector 생성
+            var collector = new RepoDataCollector(owner, repo);
 
-            if (!string.IsNullOrEmpty(token))
+            // 데이터 수집
+            var userActivities = collector.Collect();
+
+            // 테스트 출력, 라벨 카운트 기능 유지
+            Dictionary<string, int> labelCounts = new Dictionary<string, int>
             {
-                File.WriteAllText(".env", $"GITHUB_TOKEN={token}\n");
-                Console.WriteLine(".env의 토큰을 갱신합니다.");
-                client.Credentials = new Credentials(token);
-            }
-            else if (File.Exists(".env"))
+                { "bug", 0 },
+                { "documentation", 0 },
+                { "typo", 0 }
+            };
+            string filePath = $"{repo}.txt";
+            using (var writer = new StreamWriter(filePath))
             {
-                Console.WriteLine(".env의 토큰으로 인증을 진행합니다.");
-                Env.Load();
-                token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-                client.Credentials = new Credentials(token);
+                writer.WriteLine($"=== {repo} Activities ===");
+                foreach (var kvp in userActivities)
+                {
+                    string userId = kvp.Key;
+                    UserActivity activity = kvp.Value;
+
+                    writer.WriteLine($"User ID: {userId}");
+                    writer.WriteLine($"  PR_fb: {activity.PR_fb}");
+                    writer.WriteLine($"  PR_doc: {activity.PR_doc}");
+                    writer.WriteLine($"  PR_typo: {activity.PR_typo}");
+                    writer.WriteLine($"  IS_fb: {activity.IS_fb}");
+                    writer.WriteLine($"  IS_doc: {activity.IS_doc}");
+                    writer.WriteLine(); // 빈 줄
+
+                    // 라벨 카운트
+                    labelCounts["bug"] += activity.PR_fb + activity.IS_fb;
+                    labelCounts["documentation"] += activity.PR_doc + activity.IS_doc;
+                    labelCounts["typo"] += activity.PR_typo;
+                }
             }
-
-            var repository = client.Repository.Get(owner, repo).GetAwaiter().GetResult();
-
-            Console.WriteLine($"[INFO] Repository Name: {repository.Name}");
-            Console.WriteLine($"[INFO] Description: {repository.Description}");
-            Console.WriteLine($"[INFO] URL: {repository.HtmlUrl}");
+            summaries.Add(($"{owner}/{repo}", labelCounts));
         }
         catch (Exception e)
         {
@@ -80,11 +99,6 @@ CoconaApp.Run((
 
             var outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
-            var dataCollector = new RepoDataCollector(token!); // ✅ null-forgiving 연산자 적용
-            var labelCounts = dataCollector.Collect(owner, repo, outputDir, formats);
-
-            // 저장소별 라벨 카운트를 요약 리스트에 추가
-            summaries.Add(($"{owner}/{repo}", labelCounts));
             // ===== 파일 생성 기능 구현 후 제거 =====
             Console.WriteLine("\n===생성되는 포맷===");
             foreach (var fm in formats)
@@ -106,12 +120,12 @@ CoconaApp.Run((
     {
         Console.WriteLine("\n📊 전체 저장소 요약 통계");
         Console.WriteLine("----------------------------------------------------");
-        Console.WriteLine($"{"Repo",-30} {"Bug",5} {"Doc",5} {"Enh",5}");
+        Console.WriteLine($"{"Repo",-30} {"B/F",5} {"Doc",5} {"typo",5}");
         Console.WriteLine("----------------------------------------------------");
 
         foreach (var (repoName, counts) in summaries)
         {
-            Console.WriteLine($"{repoName,-30} {counts["bug"],5} {counts["documentation"],5} {counts["enhancement"],5}");
+            Console.WriteLine($"{repoName,-30} {counts["bug"],5} {counts["documentation"],5} {counts["typo"],5}");
         }
     }
 });
