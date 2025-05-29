@@ -85,14 +85,26 @@ CoconaApp.Run((
 
             var outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
-            // ===== 파일 생성 기능 구현 후 제거 =====
-            Console.WriteLine("\n===생성되는 포맷===");
-            foreach (var fm in formats)
+            // 점수 계산 기능이 구현되지 않았으므로 현재 생성되는 파일은 모두 DummyData의 repo1Scores으로 만들어짐
+            // 추후 계산 기능이 구현 후 반환되는 값을 DummyData.repo1Scores대신 전달해야합니다
+            var generator = new FileGenerator(DummyData.repo1Scores, repo, outputDir);
+
+            if (formats.Contains("csv"))
             {
-                Console.WriteLine($"-{fm}");
+                generator.GenerateCsv();
             }
-            Console.WriteLine("\n파일 생성 기능이 아직 구현되지 않았습니다.");
-            // ===== 파일 생성 기능 구현 후 제거 =====
+            if (formats.Contains("text"))
+            {
+                Console.WriteLine("텍스트 파일 생성이 아직 구현되지 않았습니다.");
+            }
+            if (formats.Contains("chart"))
+            {
+                Console.WriteLine("차트 생성이 아직 구현되지 않았습니다.");
+            }
+            if (formats.Contains("html"))
+            {
+                Console.WriteLine("html 파일 생성이 아직 구현되지 않았습니다.");
+            }
         }
         catch (Exception ex)
         {

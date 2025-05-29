@@ -11,11 +11,12 @@ public record UserActivity(
 
 // UserActivity를 분석해서 사용자별 점수를 계산하는 레코드
 public record UserScore(
-    // int ????, // 점수의 이름은 나중에 정하기,
-    // int ????, // 점수의 이름은 나중에 정하기,
-    // int ????, // 점수의 이름은 나중에 정하기,
-    // int ????, // 점수의 이름은 나중에 정하기,
-    // int ????, // 점수의 이름은 나중에 정하기,
+    int PR_fb,
+    int PR_doc,
+    int PR_typo,
+    int IS_fb,
+    int IS_doc,
+    int total
 );
 
 // 1번 단계를 책임지는 Repscore/RepoDataCollector.cs의 클래스의 객체 하나가
@@ -44,6 +45,21 @@ public static class DummyData
         { "user10", new UserActivity(21, 9, 13, 4, 11) },
         { "user11", new UserActivity(2, 18, 7, 15, 10) },
         { "user12", new UserActivity(16, 3, 12, 8, 14) },
+    };
+
+    public static Dictionary<string, UserScore> repo1Scores = new()
+    {
+        {"user01", new UserScore(21, 8, 0, 4, 3, 36)},
+        {"user02", new UserScore(12, 6, 5, 2, 1, 26)},
+        {"user03", new UserScore(3, 2, 3, 6, 2, 16)},
+        {"user04", new UserScore(18, 10, 4, 8, 1, 41)},
+        {"user05", new UserScore(9, 4, 2, 2, 5, 22)},
+        {"user06", new UserScore(6, 12, 1, 6, 3, 28)},
+        {"user07", new UserScore(15, 14, 5, 4, 2, 40)},
+        {"user08", new UserScore(27, 16, 3, 10, 4, 60)},
+        {"user09", new UserScore(30, 6, 0, 12, 1, 49)},
+        {"user10", new UserScore(24, 18, 2, 14, 2, 60)},
+        {"user11", new UserScore(33, 20, 4, 16, 5, 78)}
     };
 }
 
