@@ -95,7 +95,7 @@ CoconaApp.Run((
             }
             if (formats.Contains("text"))
             {
-                Console.WriteLine("텍스트 파일 생성이 아직 구현되지 않았습니다.");
+                generator.GenerateTable();
             }
             if (formats.Contains("chart"))
             {
