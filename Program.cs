@@ -10,7 +10,8 @@ CoconaApp.Run((
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
     [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"result\")")] string? output,
     [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")")] string[]? format,
-    [Option('t', Description = "GitHub 액세스 토큰 입력")] string? token
+    [Option('t', Description = "GitHub 액세스 토큰 입력")] string? token,
+    [Option("include-user", Description = "결과에 포함할 사용자 ID 목록")] string[]? includeUsers
 ) =>
 {
     // 더미 데이타가 실제로 불러와 지는지 기본적으로 확인하기 위한 코드
@@ -50,10 +51,16 @@ CoconaApp.Run((
             using (var writer = new StreamWriter(filePath))
             {
                 writer.WriteLine($"=== {repo} Activities ===");
+                HashSet<string>? userSet = null;
+                if (includeUsers != null && includeUsers.Length > 0)
+                    userSet = new HashSet<string>(includeUsers, StringComparer.OrdinalIgnoreCase);
                 foreach (var kvp in userActivities)
                 {
                     string userId = kvp.Key;
                     UserActivity activity = kvp.Value;
+
+                    if (userSet != null && !userSet.Contains(userId))
+                        continue;
 
                     writer.WriteLine($"User ID: {userId}");
                     writer.WriteLine($"  PR_fb: {activity.PR_fb}");
