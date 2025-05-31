@@ -177,12 +177,6 @@ static List<string> checkFormat(string[] format)
 
 static (string, string) ParseRepoPath(string repoPath)
 {
-    if (!repoPath.Contains('/'))
-    {
-        Console.WriteLine($"! 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
-        Environment.Exit(1);
-    }
-
     var parts = repoPath.Split('/');
     if (parts.Length != 2)
     {
