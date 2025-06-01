@@ -51,7 +51,7 @@ public class FileGenerator
         var table = new ConsoleTable(headers);
 
         // 내용 작성
-        foreach (var (id, scores) in _scores)
+        foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
             table.AddRow(
                 id.PadRight(colWidths[0]), // 글자는 왼쪽 정렬                   
