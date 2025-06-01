@@ -25,7 +25,7 @@ CoconaApp.Run((
    if (string.IsNullOrWhiteSpace(output))
    {
        // 실제 디폴트 값은 코드에서 "output"으로 설정되어 있음
-       Console.WriteLine("출력 디렉토리가 지정되지 않아 기본값 'output'이 사용됩니다.");
+       Console.WriteLine("출력 디렉토리가 지정되지 않아 기본 경로 'output/'이 사용됩니다.");
    }
 
    // ───────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ CoconaApp.Run((
    if (format == null || format.Length == 0)
    {
        // 여기서 기본값 배열은 {"text", "csv", "chart", "html"}으로 설정됨
-       Console.WriteLine("출력 형식이 지정되지 않아 기본값 'text,csv,chart,html'이 사용됩니다.");
+       Console.WriteLine("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
    }
     
     // 저장소별 라벨 통계 요약 정보를 저장할 리스트
