@@ -1,6 +1,5 @@
 ﻿using Cocona;
 
-
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
@@ -10,34 +9,42 @@ CoconaApp.Run((
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록")] string[]? includeUsers
 ) =>
 {
-   // ───────────────────────────────────────────────────────
-   // 1) output 옵션 누락 시 기본값 안내
-   // ───────────────────────────────────────────────────────
-   if (string.IsNullOrWhiteSpace(output))
-   {
-       // 실제 디폴트 값은 코드에서 "output"으로 설정되어 있음
-       Console.WriteLine("출력 디렉토리가 지정되지 않아 기본 경로 'output/'이 사용됩니다.");
-   }
+    // ───────────────────────────────────────────────────────
+    // 1) output 옵션 누락 시 기본값 안내
+    // ───────────────────────────────────────────────────────
+    if (string.IsNullOrWhiteSpace(output))
+    {
+        // 실제 디폴트 값은 코드에서 "output"으로 설정되어 있음
+        Console.WriteLine("출력 디렉토리가 지정되지 않아 기본 경로 'output/'이 사용됩니다.");
+    }
 
-   // ───────────────────────────────────────────────────────
-   // 2) format 옵션 누락 시 기본값 안내
-   // ───────────────────────────────────────────────────────
-   if (format == null || format.Length == 0)
-   {
-       // 여기서 기본값 배열은 {"text", "csv", "chart", "html"}으로 설정됨
-       Console.WriteLine("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
-   }
-    
+    // ───────────────────────────────────────────────────────
+    // 2) format 옵션 누락 시 기본값 안내
+    // ───────────────────────────────────────────────────────
+    if (format == null || format.Length == 0)
+    {
+        // 여기서 기본값 배열은 {"text", "csv", "chart", "html"}으로 설정됨
+        Console.WriteLine("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
+    }
+
     // 저장소별 라벨 통계 요약 정보를 저장할 리스트
     var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
+    var failedRepos = new List<string>(); // ❗ 실패한 저장소 목록 수집용
 
     // _client 초기화 
     RepoDataCollector.CreateClient(token);
 
     foreach (var repoPath in repos)
-    {   
+    {
         // repoPath 파싱 및 형식 검사  
-        var (owner, repo) = ParseRepoPath(repoPath);
+        var parsed = TryParseRepoPath(repoPath);
+        if (parsed == null)
+        {
+            failedRepos.Add(repoPath);
+            continue; // 형식 오류는 건너뜀
+        }
+
+        var (owner, repo) = parsed.Value;
 
         // collector 생성
         var collector = new RepoDataCollector(owner, repo);
@@ -46,6 +53,7 @@ CoconaApp.Run((
         var userActivities = collector.Collect();
 
         Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
+
         try
         {
             // 테스트 출력, 라벨 카운트 기능 유지
@@ -112,7 +120,6 @@ CoconaApp.Run((
             // ───────────────────────────────────────────────────────
             string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
-
             var userScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
 
             // 점수 계산 기능이 구현되지 않았으므로 현재 생성되는 파일은 모두 DummyData의 repo1Scores으로 만들어짐
@@ -155,11 +162,21 @@ CoconaApp.Run((
             Console.WriteLine($"{repoName,-30} {counts["bug"],5} {counts["documentation"],5} {counts["typo"],5}");
         }
     }
+
+    // ❗ 실패 저장소 요약 출력
+    if (failedRepos.Count > 0)
+    {
+        Console.WriteLine("\n❌ 처리되지 않은 저장소 목록:");
+        foreach (var r in failedRepos)
+        {
+            Console.WriteLine($"- {r} (올바른 형식: owner/repo)");
+        }
+    }
 });
 
 static List<string> checkFormat(string[] format)
 {
-    var FormatList = new List<string> {"text", "csv", "chart", "html", "all"}; // 유효한 format
+    var FormatList = new List<string> { "text", "csv", "chart", "html", "all" }; // 유효한 format
 
     var validFormats = new List<string> { };
     var unValidFormats = new List<string> { };
@@ -204,13 +221,13 @@ static List<string> checkFormat(string[] format)
     return validFormats;
 }
 
-static (string, string) ParseRepoPath(string repoPath)
+static (string, string)? TryParseRepoPath(string repoPath)
 {
     var parts = repoPath.Split('/');
     if (parts.Length != 2)
     {
-        Console.WriteLine($"! 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
-        Environment.Exit(1);
+        Console.WriteLine($"⚠️ 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다. (예: oss2025hnu/reposcore-cs");
+        return null;
     }
 
     return (parts[0], parts[1]);
