@@ -20,6 +20,24 @@ CoconaApp.Run((
     var repo2Activities = DummyData.repo2Activities;
     Console.WriteLine("repo2Activities:" + repo2Activities.Count);
 
+   // ───────────────────────────────────────────────────────
+   // 1) output 옵션 누락 시 기본값 안내
+   // ───────────────────────────────────────────────────────
+   if (string.IsNullOrWhiteSpace(output))
+   {
+       // 실제 디폴트 값은 코드에서 "output"으로 설정되어 있음
+       Console.WriteLine("출력 디렉토리가 지정되지 않아 기본 경로 'output/'이 사용됩니다.");
+   }
+
+   // ───────────────────────────────────────────────────────
+   // 2) format 옵션 누락 시 기본값 안내
+   // ───────────────────────────────────────────────────────
+   if (format == null || format.Length == 0)
+   {
+       // 여기서 기본값 배열은 {"text", "csv", "chart", "html"}으로 설정됨
+       Console.WriteLine("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
+   }
+    
     // 저장소별 라벨 통계 요약 정보를 저장할 리스트
     var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
 
@@ -84,13 +102,26 @@ CoconaApp.Run((
             continue;
         }
 
-        try
+              try
         {
-            var formats = format == null ?
-                new List<string> { "text", "csv", "chart", "html" }
-                : checkFormat(format);
+            // ───────────────────────────────────────────────────────
+            // 3) 실제 format 기본값/유효성 검사 적용
+            // ───────────────────────────────────────────────────────
+            List<string> formats;
+            if (format == null || format.Length == 0)
+            {
+                formats = new List<string> { "text", "csv", "chart", "html" };
+            }
+            else
+            {
+                formats = checkFormat(format);
+            }
 
-            var outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
+            // ───────────────────────────────────────────────────────
+            // 4) 실제 outputDir 기본값 적용
+            // ───────────────────────────────────────────────────────
+            string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
+
 
             // 점수 계산 기능이 구현되지 않았으므로 현재 생성되는 파일은 모두 DummyData의 repo1Scores으로 만들어짐
             // 추후 계산 기능이 구현 후 반환되는 값을 DummyData.repo1Scores대신 전달해야합니다
