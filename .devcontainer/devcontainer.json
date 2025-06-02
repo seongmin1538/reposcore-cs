@@ -14,5 +14,5 @@
   "features": {
     "ghcr.io/devcontainers/features/common-utils:1": {}
   },
-  "postCreateCommand": "apt-get update && apt-get install -y ruby-full && gem install mustache"
+  "postCreateCommand": "apt-get update && apt-get install -y ruby-mustache"
 }
