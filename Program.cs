@@ -1,8 +1,4 @@
 ﻿using Cocona;
-using System;
-using System.Collections.Generic;
-using Octokit;
-using DotNetEnv;
 
 
 CoconaApp.Run((
@@ -14,12 +10,6 @@ CoconaApp.Run((
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록")] string[]? includeUsers
 ) =>
 {
-    // 더미 데이타가 실제로 불러와 지는지 기본적으로 확인하기 위한 코드
-    var repo1Activities = DummyData.repo1Activities;
-    Console.WriteLine("repo1Activities:" + repo1Activities.Count);
-    var repo2Activities = DummyData.repo2Activities;
-    Console.WriteLine("repo2Activities:" + repo2Activities.Count);
-
    // ───────────────────────────────────────────────────────
    // 1) output 옵션 누락 시 기본값 안내
    // ───────────────────────────────────────────────────────
@@ -46,18 +36,18 @@ CoconaApp.Run((
 
     foreach (var repoPath in repos)
     {   
-        // repoPath 파싱 및 형식 검사 
-        var (owner,repo) = ParseRepoPath(repoPath);
+        // repoPath 파싱 및 형식 검사  
+        var (owner, repo) = ParseRepoPath(repoPath);
+
+        // collector 생성
+        var collector = new RepoDataCollector(owner, repo);
+
+        // 데이터 수집
+        var userActivities = collector.Collect();
 
         Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
         try
         {
-            // collector 생성
-            var collector = new RepoDataCollector(owner, repo);
-
-            // 데이터 수집
-            var userActivities = collector.Collect();
-
             // 테스트 출력, 라벨 카운트 기능 유지
             Dictionary<string, int> labelCounts = new Dictionary<string, int>
             {
@@ -102,7 +92,7 @@ CoconaApp.Run((
             continue;
         }
 
-              try
+        try
         {
             // ───────────────────────────────────────────────────────
             // 3) 실제 format 기본값/유효성 검사 적용
@@ -123,9 +113,11 @@ CoconaApp.Run((
             string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
 
+            var userScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
+
             // 점수 계산 기능이 구현되지 않았으므로 현재 생성되는 파일은 모두 DummyData의 repo1Scores으로 만들어짐
             // 추후 계산 기능이 구현 후 반환되는 값을 DummyData.repo1Scores대신 전달해야합니다
-            var generator = new FileGenerator(DummyData.repo1Scores, repo, outputDir);
+            var generator = new FileGenerator(userScores, repo, outputDir);
 
             if (formats.Contains("csv"))
             {
@@ -147,7 +139,6 @@ CoconaApp.Run((
         catch (Exception ex)
         {
             Console.WriteLine($"! 오류 발생: {ex.Message}");
-            continue;
         }
     }
 
