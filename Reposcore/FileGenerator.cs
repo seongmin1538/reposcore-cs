@@ -29,9 +29,9 @@ public class FileGenerator
         writer.WriteLine("UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,total");
 
         // 내용 작성
-        foreach (var (id, socres) in _scores.OrderByDescending(x => x.Value.total))
+        foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
-            string line = $"{id},{socres.PR_fb},{socres.PR_doc},{socres.PR_typo},{socres.IS_fb},{socres.IS_doc},{socres.total}";
+            string line = $"{id},{scores.PR_fb},{scores.PR_doc},{scores.PR_typo},{scores.IS_fb},{scores.IS_doc},{scores.total}";
             writer.WriteLine(line);
         }
 
