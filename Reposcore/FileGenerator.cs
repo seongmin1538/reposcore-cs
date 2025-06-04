@@ -19,6 +19,19 @@ public class FileGenerator
         Directory.CreateDirectory(folderPath);
     }
 
+    double sumOfPR
+    {
+        get
+        {
+            return _scores.Sum(pair => pair.Value.PR_doc + pair.Value.PR_fb + pair.Value.PR_typo);
+        }        
+    }
+
+    double sumOfIs
+    {
+        get { return _scores.Sum(pair => pair.Value.IS_doc + pair.Value.IS_fb); }
+    }
+
     public void GenerateCsv()
     {
         // 경로 설정
@@ -26,12 +39,13 @@ public class FileGenerator
         using StreamWriter writer = new StreamWriter(filePath);
 
         // CSV 헤더
-        writer.WriteLine("UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,total");
+        writer.WriteLine("UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
 
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
-            string line = $"{id},{scores.PR_fb},{scores.PR_doc},{scores.PR_typo},{scores.IS_fb},{scores.IS_doc},{scores.total}";
+            string line =
+                $"{id},{scores.PR_fb},{scores.PR_doc},{scores.PR_typo},{scores.IS_fb},{scores.IS_doc},{(scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100:F1},{(scores.IS_doc + scores.IS_fb) / sumOfIs * 100:F1},{scores.total}";
             writer.WriteLine(line);
         }
 
@@ -43,7 +57,7 @@ public class FileGenerator
         string filePath = Path.Combine(_folderPath, $"{_repoName}.txt");
 
         // 테이블 생성
-        var headers = "UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,total".Split(',');
+        var headers = "UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
 
         // 각 칸의 너비 계산 (오른쪽 정렬을 위해 사용)
         int[] colWidths = headers.Select(h => h.Length).ToArray();
@@ -60,7 +74,9 @@ public class FileGenerator
                 scores.PR_typo.ToString().PadLeft(colWidths[3]),
                 scores.IS_fb.ToString().PadLeft(colWidths[4]),
                 scores.IS_doc.ToString().PadLeft(colWidths[5]),
-                scores.total.ToString().PadLeft(colWidths[6])
+                $"{(scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100:F1}".PadLeft(colWidths[6]),
+                $"{(scores.IS_doc + scores.IS_fb) / sumOfIs * 100:F1}".PadLeft(colWidths[7]),
+                scores.total.ToString().PadLeft(colWidths[8])
             );
         }
 
