@@ -43,16 +43,7 @@ Build succeeded.
 ## 프로젝트 실행
 
 프로젝트를 자동으로 빌드한 뒤 `Program.cs`의 `Main` 메서드를 실행합니다.
-입력 인자가 필요한 프로그램이라면 `--` 뒤에 인자를 넣어줘야 합니다.
-
-```bash
-dotnet run -- [owner] [repo]
-```
-
-예시 (reposcore-cs 실행):
-```bash
-dotnet run -- oss2025hnu reposcore-cs
-```
+실행 방법과 예시 명령어들은 README.md에 있습니다.
 
 예시 출력:
 ```bash
