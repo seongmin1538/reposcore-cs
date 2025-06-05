@@ -45,23 +45,6 @@ Build succeeded.
 프로젝트를 자동으로 빌드한 뒤 `Program.cs`의 `Main` 메서드를 실행합니다.
 실행 방법과 예시 명령어들은 README.md에 있습니다.
 
-예시 출력:
-```bash
-📊 GitHub Label 통계 결과
-
-✅ Pull Requests (Merged)
-- Bug PRs: 8
-- Documentation PRs: 62
-- Enhancement PRs: 57
-
-✅ Issues
-- Bug Issues: 8
-- Documentation Issues: 62
-- Enhancement Issues: 57
-
-`Program.cs`의 `Main` 메서드가 실행됩니다.
-```
-
 ---
 
 ## 테스트
