@@ -1,14 +1,69 @@
 ﻿using Cocona;
 
+// ───────────────────────────────────────────────────────
+// ① 캐시 시뮬레이션 상수 (현재는 항상 Disabled)
+// ───────────────────────────────────────────────────────
+const bool CACHE_ENABLED = false;
+
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
     [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"result\")", ValueName = "Output directory")] string? output,
     [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")", ValueName = "Output format")] string[]? format,
     [Option('t', Description = "GitHub 액세스 토큰 입력", ValueName = "Github token")] string? token,
-    [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers
+    [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
+    [Option("dry-run", Description = "실제 작업 없이 시뮬레이션 로그만 출력")] bool dryRun
 ) =>
 {
+    // ─────────────────────────────────────────────────────────────
+    // ①-0) dry-run일 경우: 실제 로직 실행 전 “시뮬레이션 로그” 출력 후 종료
+    // ─────────────────────────────────────────────────────────────
+    if (dryRun)
+    {
+        Console.WriteLine("===== Dry-Run 시뮬레이션 =====");
+        Console.WriteLine("분석 대상 저장소 목록:");
+        foreach (var repoPath in repos)
+        {
+            Console.WriteLine($"  - {repoPath}");
+        }
+        Console.WriteLine();
+
+        Console.WriteLine($"캐시 사용 여부: {(CACHE_ENABLED ? "Enabled" : "Disabled")}");
+        Console.WriteLine();
+
+        Console.WriteLine("API 호출 예정 여부: Yes (GitHub API를 사용하여 데이터를 가져올 예정)");
+        Console.WriteLine();
+
+        // format과 outputDir을 시뮬레이션용으로 계산
+        List<string> _simFormats;
+        if (format == null || format.Length == 0)
+        {
+            _simFormats = new List<string> { "text", "csv", "chart", "html" };
+        }
+        else
+        {
+            _simFormats = checkFormat(format);
+        }
+        string _simOutputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
+
+        Console.WriteLine($"출력 디렉토리 예상 위치: {_simOutputDir}/<repoName>.[csv|txt]");
+        Console.WriteLine("생성될 파일 형식:");
+        foreach (var fmt in _simFormats)
+        {
+            if (fmt == "csv")
+                Console.WriteLine($"  · {_simOutputDir}/<repoName>.csv");
+            if (fmt == "text")
+                Console.WriteLine($"  · {_simOutputDir}/<repoName>.txt");
+            if (fmt == "chart")
+                Console.WriteLine($"  · [차트 기능 미구현으로 표시]");
+            if (fmt == "html")
+                Console.WriteLine($"  · [HTML 기능 미구현으로 표시]");
+        }
+
+        Console.WriteLine("\n===== 시뮬레이션 종료 =====");
+        return;
+    }
+
     // ───────────────────────────────────────────────────────
     // 1) output 옵션 누락 시 기본값 안내
     // ───────────────────────────────────────────────────────
