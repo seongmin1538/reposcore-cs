@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using ConsoleTables;
+using ScottPlot;
+using ScottPlot.Plottables;
+using ScottPlot.TickGenerators;
 
 public class FileGenerator
 {
@@ -68,4 +71,53 @@ public class FileGenerator
         File.WriteAllText(filePath, table.ToMinimalString());
         Console.WriteLine($"{filePath} 생성됨");
     }
+
+    public void GenerateChart()
+    {
+        var labels = new List<string>();
+        var values = new List<double>();
+
+        foreach (var (user, score) in _scores.OrderBy(x => x.Value.total)) // 오름차순
+        {
+            labels.Add(user);
+            values.Add(score.total);
+        }
+
+        string[] names = labels.ToArray();
+        double[] scores = values.ToArray();
+        
+        // ✅ 간격 조절된 Position
+        double spacing = 10; // 막대 간격
+        double[] positions = Enumerable.Range(0, names.Length)
+                                    .Select(i => i * spacing)
+                                    .ToArray();
+
+        // Bar 데이터 생성
+        var bars = new List<Bar>();
+        for (int i = 0; i < scores.Length; i++)
+        {
+            bars.Add(new Bar
+            {
+                Position = positions[i],
+                Value = scores[i],
+                FillColor = Colors.SteelBlue,
+                Orientation = Orientation.Horizontal,
+                Size = 5,
+            });
+        }
+
+        var plt = new ScottPlot.Plot();
+        var barPlot = plt.Add.Bars(bars);
+
+        plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
+        plt.Title($"Scores - {_repoName}");
+        plt.XLabel("총 점수");
+        plt.YLabel("사용자");
+
+        string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
+        plt.SavePng(outputPath, 1920, 1080);
+        Console.WriteLine($"✅ 차트 생성 완료: {outputPath}");
+    }
+
+
 }
