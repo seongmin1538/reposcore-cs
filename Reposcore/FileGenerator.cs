@@ -45,8 +45,10 @@ public class FileGenerator
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
+            double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
+    double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
             string line =
-                $"{id},{scores.PR_fb},{scores.PR_doc},{scores.PR_typo},{scores.IS_fb},{scores.IS_doc},{(scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100:F1},{(scores.IS_doc + scores.IS_fb) / sumOfIs * 100:F1},{scores.total}";
+                $"{id},{scores.PR_fb},{scores.PR_doc},{scores.PR_typo},{scores.IS_fb},{scores.IS_doc},{prRate:F1},{isRate:F1},{scores.total}";
             writer.WriteLine(line);
         }
 
@@ -68,6 +70,8 @@ public class FileGenerator
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
+            double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
+            double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
             table.AddRow(
                 id.PadRight(colWidths[0]), // 글자는 왼쪽 정렬                   
                 scores.PR_fb.ToString().PadLeft(colWidths[1]), // 숫자는 오른쪽 정렬
@@ -75,8 +79,8 @@ public class FileGenerator
                 scores.PR_typo.ToString().PadLeft(colWidths[3]),
                 scores.IS_fb.ToString().PadLeft(colWidths[4]),
                 scores.IS_doc.ToString().PadLeft(colWidths[5]),
-                $"{(scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100:F1}".PadLeft(colWidths[6]),
-                $"{(scores.IS_doc + scores.IS_fb) / sumOfIs * 100:F1}".PadLeft(colWidths[7]),
+                $"{prRate:F1}".PadLeft(colWidths[6]),
+                $"{isRate:F1}".PadLeft(colWidths[7]),
                 scores.total.ToString().PadLeft(colWidths[8])
             );
         }
