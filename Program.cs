@@ -118,7 +118,12 @@ CoconaApp.Run((
                 { "documentation", 0 },
                 { "typo", 0 }
             };
-            string filePath = $"{repo}.txt";
+            string filePath = Path.Combine("output", repo, $"{repo}2.txt");
+            string directoryPath = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException($"Invalid file path: {filePath}");
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
             using (var writer = new StreamWriter(filePath))
             {
                 writer.WriteLine($"=== {repo} Activities ===");

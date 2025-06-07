@@ -52,7 +52,7 @@ public class FileGenerator
     public void GenerateTable()
     {
         // 출력할 파일 경로
-        string filePath = Path.Combine(_folderPath, $"{_repoName}.txt");
+        string filePath = Path.Combine(_folderPath, $"{_repoName}1.txt");
 
         // 테이블 생성
         var headers = "UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
