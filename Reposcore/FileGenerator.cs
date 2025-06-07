@@ -13,10 +13,8 @@ public class FileGenerator
     {
         _scores = repoScores;
         _repoName = repoName;
-        _folderPath = folderPath;
-
-        // 폴더생성
-        Directory.CreateDirectory(folderPath);
+        _folderPath = Path.Combine(folderPath, repoName);
+        Directory.CreateDirectory(_folderPath);
     }
 
     double sumOfPR
