@@ -196,7 +196,7 @@ CoconaApp.Run((
             }
             if (formats.Contains("chart"))
             {
-                Console.WriteLine("차트 생성이 아직 구현되지 않았습니다.");
+                generator.GenerateChart();
             }
             if (formats.Contains("html"))
             {
