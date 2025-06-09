@@ -1,0 +1,309 @@
+=== reposcore-cs Activities ===
+User ID: eunoa
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 0
+
+User ID: Bluewak
+  PR_fb: 1
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 8
+  IS_doc: 0
+
+User ID: bym010312
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 1
+  IS_fb: 1
+  IS_doc: 0
+
+User ID: LeeChungMoo965
+  PR_fb: 1
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 3
+  IS_doc: 0
+
+User ID: parkjueuny
+  PR_fb: 4
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 18
+  IS_doc: 0
+
+User ID: Sernn0
+  PR_fb: 1
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 3
+  IS_doc: 0
+
+User ID: jaewon786
+  PR_fb: 2
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 5
+  IS_doc: 0
+
+User ID: jw21603
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 1
+
+User ID: moongyeong000
+  PR_fb: 6
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 0
+
+User ID: Jae-Hyuk-Lee
+  PR_fb: 2
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 4
+  IS_doc: 1
+
+User ID: MING9UCCI
+  PR_fb: 2
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 3
+  IS_doc: 0
+
+User ID: eunwoooo
+  PR_fb: 1
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 2
+  IS_doc: 3
+
+User ID: weeksun02
+  PR_fb: 2
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 2
+  IS_doc: 0
+
+User ID: kyahnu
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 2
+  IS_doc: 0
+
+User ID: kanggyuhyuk
+  PR_fb: 1
+  PR_doc: 2
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 2
+
+User ID: JosephStalin0305
+  PR_fb: 3
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 0
+
+User ID: lsc1124
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 5
+
+User ID: porvs
+  PR_fb: 6
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 3
+  IS_doc: 0
+
+User ID: sun-juu
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 0
+
+User ID: xhltkwk
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 6
+  IS_doc: 0
+
+User ID: jinho131
+  PR_fb: 1
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 0
+
+User ID: KohSeungJae
+  PR_fb: 8
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 0
+
+User ID: seoyoomi
+  PR_fb: 0
+  PR_doc: 2
+  PR_typo: 1
+  IS_fb: 2
+  IS_doc: 3
+
+User ID: sungh00
+  PR_fb: 1
+  PR_doc: 4
+  PR_typo: 2
+  IS_fb: 3
+  IS_doc: 8
+
+User ID: dbrhr5
+  PR_fb: 2
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 2
+  IS_doc: 0
+
+User ID: speedmult
+  PR_fb: 3
+  PR_doc: 4
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 1
+
+User ID: kyagrd
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 3
+  IS_doc: 1
+
+User ID: lad-blip
+  PR_fb: 0
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 0
+
+User ID: hyn033
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 1
+
+User ID: jeonggeun1
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 0
+
+User ID: sieunkirn
+  PR_fb: 0
+  PR_doc: 3
+  PR_typo: 0
+  IS_fb: 2
+  IS_doc: 1
+
+User ID: taegeon1ee
+  PR_fb: 0
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 1
+
+User ID: MyeongHyeonCheol
+  PR_fb: 1
+  PR_doc: 2
+  PR_typo: 1
+  IS_fb: 0
+  IS_doc: 4
+
+User ID: smallisl
+  PR_fb: 0
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 0
+
+User ID: jungsuryeon
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 0
+
+User ID: syl0073
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 1
+
+User ID: AnhyunJun1741
+  PR_fb: 1
+  PR_doc: 1
+  PR_typo: 1
+  IS_fb: 1
+  IS_doc: 1
+
+User ID: SongHyunWoo123
+  PR_fb: 1
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 0
+
+User ID: sanghoon03
+  PR_fb: 0
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 1
+
+User ID: how-to-song
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 2
+
+User ID: uzihyun
+  PR_fb: 0
+  PR_doc: 1
+  PR_typo: 0
+  IS_fb: 2
+  IS_doc: 0
+
+User ID: INHYOYUN
+  PR_fb: 1
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 0
+  IS_doc: 0
+
+User ID: lxyul
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 2
+  IS_doc: 0
+
+User ID: isDohyeon
+  PR_fb: 0
+  PR_doc: 0
+  PR_typo: 0
+  IS_fb: 1
+  IS_doc: 0
+
