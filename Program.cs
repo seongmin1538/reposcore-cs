@@ -196,7 +196,8 @@ CoconaApp.Run((
             }
             if (formats.Contains("chart"))
             {
-                generator.GenerateChart();
+                // generator.GenerateChart();
+                Console.WriteLine("chart 생성이 오류가 나서 주석처리 해놓았습니다. 관련 이슈 PR 작업할 분들은 이 코드 바로 위에 줄 주석 풀고 진행해 주세요.");
             }
             if (formats.Contains("html"))
             {
