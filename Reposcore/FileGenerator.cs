@@ -140,6 +140,10 @@ public class FileGenerator
         plt.XLabel("총 점수");
         plt.YLabel("사용자");
 
+        // x축 범위 설정
+        plt.Axes.Bottom.Min = 0;
+        plt.Axes.Bottom.Max = scores.Max() * 1.1; // 최대값의 110%까지 표시
+
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
         plt.SavePng(outputPath, 1920, 1080);
         Console.WriteLine($"✅ 차트 생성 완료: {outputPath}");
