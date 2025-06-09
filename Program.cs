@@ -16,7 +16,7 @@ CoconaApp.Run((
 ) =>
 {
     // ─────────────────────────────────────────────────────────────
-    // ①-0) dry-run일 경우: 실제 로직 실행 전 “시뮬레이션 로그” 출력 후 종료
+    // ①-0) dry-run일 경우: 실제 로직 실행 전 "시뮬레이션 로그" 출력 후 종료
     // ─────────────────────────────────────────────────────────────
     if (dryRun)
     {
@@ -199,6 +199,17 @@ CoconaApp.Run((
                 }
             }
             summaries.Add(($"{owner}/{repo}", labelCounts));
+
+            // 존재하지 않는 사용자에 대한 경고 메시지 출력
+            if (includeUsers != null && includeUsers.Length > 0)
+            {
+                var existingUsers = userActivities.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var missingUsers = includeUsers.Where(u => !existingUsers.Contains(u)).ToList();
+                if (missingUsers.Any())
+                {
+                    Console.WriteLine($"⚠️ 다음 사용자는 {owner}/{repo} 저장소에서 찾을 수 없습니다: {string.Join(", ", missingUsers)}\n");
+                }
+            }
         }
         catch (Exception e)
         {
