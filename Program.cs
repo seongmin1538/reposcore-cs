@@ -12,6 +12,8 @@ CoconaApp.Run((
     [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")", ValueName = "Output format")] string[]? format,
     [Option('t', Description = "GitHub 액세스 토큰 입력", ValueName = "Github token")] string? token,
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
+    [Option("since", Description = "이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "Start date")] string? since,
+    [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
     [Option("dry-run", Description = "실제 작업 없이 시뮬레이션 로그만 출력")] bool dryRun
 ) =>
 {
@@ -36,6 +38,16 @@ CoconaApp.Run((
 
         Console.WriteLine($"캐시 사용 여부: {(CACHE_ENABLED ? "Enabled" : "Disabled")}");
         Console.WriteLine();
+
+        if (!string.IsNullOrEmpty(since) || !string.IsNullOrEmpty(until))
+        {
+            Console.WriteLine("분석 기간:");
+            if (!string.IsNullOrEmpty(since))
+                Console.WriteLine($"  • 시작: {since}");
+            if (!string.IsNullOrEmpty(until))
+                Console.WriteLine($"  • 종료: {until}");
+            Console.WriteLine();
+        }
 
         Console.WriteLine("API 호출 예정 여부: Yes (GitHub API를 사용하여 데이터를 가져올 예정)");
         Console.WriteLine();
@@ -83,7 +95,7 @@ CoconaApp.Run((
             Dictionary<string, UserActivity> userActivities;
             try
             {
-                userActivities = collector.Collect(); // ✅ 실제 참여자 목록 가져오기
+                userActivities = collector.Collect(since: since, until: until); // ✅ 실제 참여자 목록 가져오기
             }
             catch (Exception ex)
             {
@@ -151,7 +163,7 @@ CoconaApp.Run((
         var collector = new RepoDataCollector(owner, repo);
 
         // 데이터 수집
-        var userActivities = collector.Collect();
+        var userActivities = collector.Collect(since: since, until: until);
 
         Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
 
