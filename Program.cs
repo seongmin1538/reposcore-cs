@@ -1,4 +1,7 @@
 ﻿using Cocona;
+using System.Text.Json;          // JSON 파싱
+using System.IO;                 // File, Path
+using System.Linq;
 
 // ───────────────────────────────────────────────────────
 // ① 캐시 시뮬레이션 상수 (현재는 항상 Disabled)
@@ -12,9 +15,46 @@ CoconaApp.Run((
     [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")", ValueName = "Output format")] string[]? format,
     [Option('t', Description = "GitHub 액세스 토큰 입력", ValueName = "Github token")] string? token,
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
-    [Option("dry-run", Description = "실제 작업 없이 시뮬레이션 로그만 출력")] bool dryRun
+    [Option("dry-run", Description = "실제 작업 없이 시뮬레이션 로그만 출력")] bool dryRun,
+    [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath
 ) =>
 {
+    // ───────────────────────────────────────────────────────
+    // A) user-info 옵션으로 전달된 JSON/CSV 파일을 파싱해서 idToNameMap에 저장
+    // ───────────────────────────────────────────────────────
+    Dictionary<string,string>? idToNameMap = null;
+    if (!string.IsNullOrWhiteSpace(userInfoPath))
+    {
+        var ext = Path.GetExtension(userInfoPath).ToLowerInvariant();
+        try
+        {
+            if (ext == ".json")
+            {
+                var json = File.ReadAllText(userInfoPath);
+                idToNameMap = JsonSerializer.Deserialize<Dictionary<string,string>>(json);
+            }
+            else if (ext == ".csv")
+            {
+                idToNameMap = File.ReadAllLines(userInfoPath)
+                    .Skip(1) // 헤더(Id,Name) 스킵
+                    .Select(line => line.Split(','))
+                    .Where(parts => parts.Length == 2)
+                    .ToDictionary(p => p[0].Trim(), p => p[1].Trim(), StringComparer.OrdinalIgnoreCase);
+            }
+            else
+            {
+                Console.WriteLine("올바르지 못한 포멧입니다.");
+                return;
+            }
+            if (idToNameMap == null || idToNameMap.Count == 0)
+                throw new Exception();
+        }
+        catch
+        {
+            Console.WriteLine("올바르지 못한 포멧입니다.");
+            return;
+        }
+    }
     // ─────────────────────────────────────────────────────────────
     // ①-0) dry-run일 경우: 실제 로직 실행 전 "시뮬레이션 로그" 출력 후 종료
     // ─────────────────────────────────────────────────────────────
@@ -237,11 +277,16 @@ CoconaApp.Run((
             // ───────────────────────────────────────────────────────
             string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
-            var userScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
+    // C) ID→이름 치환: userInfoPath가 주어졌으면 매핑, 아니면 원래 ID 유지
+    var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
+    var finalScores = idToNameMap != null
+        ? rawScores.ToDictionary(
+            kvp => idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
+            kvp => kvp.Value,
+            StringComparer.OrdinalIgnoreCase)
+        : rawScores;
 
-            // 점수 계산 기능이 구현되지 않았으므로 현재 생성되는 파일은 모두 DummyData의 repo1Scores으로 만들어짐
-            // 추후 계산 기능이 구현 후 반환되는 값을 DummyData.repo1Scores대신 전달해야합니다
-            var generator = new FileGenerator(userScores, repo, outputDir);
+    var generator = new FileGenerator(finalScores, repo, outputDir);
 
             if (formats.Contains("csv"))
             {
