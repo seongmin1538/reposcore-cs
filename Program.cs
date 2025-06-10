@@ -6,7 +6,7 @@ using System.Linq;
 // ───────────────────────────────────────────────────────
 // ① 캐시 시뮬레이션 상수 (현재는 항상 Disabled)
 // ───────────────────────────────────────────────────────
-const bool CACHE_ENABLED = false;
+
 
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
@@ -17,9 +17,17 @@ CoconaApp.Run((
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
     [Option("since", Description = "이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "Start date")] string? since,
     [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
-    [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath
+    [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
+    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false
 ) =>
 {
+    // 캐시 디렉토리 생성
+    const string CACHE_DIR = "cache";
+    if (!Directory.Exists(CACHE_DIR))
+    {
+        Directory.CreateDirectory(CACHE_DIR);
+    }
+
     // ───────────────────────────────────────────────────────
     // A) user-info 옵션으로 전달된 JSON/CSV 파일을 파싱해서 idToNameMap에 저장
     // ───────────────────────────────────────────────────────
@@ -93,12 +101,46 @@ CoconaApp.Run((
         }
 
         var (owner, repo) = parsed.Value;
+        var cacheFilePath = Path.Combine(CACHE_DIR, $"{owner}_{repo}.json");
 
-        // collector 생성
-        var collector = new RepoDataCollector(owner, repo);
+        Dictionary<string, UserActivity>? userActivities = null;
 
-        // 데이터 수집
-        var userActivities = collector.Collect(since: since, until: until);
+        // 캐시 사용 옵션이 있고 캐시 파일이 존재하는 경우
+        if (useCache && File.Exists(cacheFilePath))
+        {
+            try
+            {
+                var json = File.ReadAllText(cacheFilePath);
+                userActivities = JsonSerializer.Deserialize<Dictionary<string, UserActivity>>(json);
+                Console.WriteLine($"📦 캐시에서 데이터를 로드했습니다: {owner}/{repo}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ 캐시 파일 로드 실패: {ex.Message}");
+            }
+        }
+
+        // 캐시에서 데이터를 가져오지 못한 경우 GitHub API 호출
+        if (userActivities == null)
+        {
+            // collector 생성
+            var collector = new RepoDataCollector(owner, repo);
+
+            // 데이터 수집
+            userActivities = collector.Collect(since: since, until: until);
+
+            // 캐시 저장
+            try
+            {
+                var json = JsonSerializer.Serialize(userActivities, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(cacheFilePath, json);
+                Console.WriteLine($"💾 데이터를 캐시에 저장했습니다: {owner}/{repo}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ 캐시 저장 실패: {ex.Message}");
+            }
+        }
 
         Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
 
