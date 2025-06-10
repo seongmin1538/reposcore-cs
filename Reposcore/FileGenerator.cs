@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Drawing;
 using ConsoleTables;
 using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.TickGenerators;
+using Alignment = ScottPlot.Alignment;
+using Color = System.Drawing.Color;
 
 public class FileGenerator
 {
@@ -119,6 +122,7 @@ public class FileGenerator
                                     .ToArray();
 
         // Bar 데이터 생성
+        var plt = new ScottPlot.Plot();
         var bars = new List<Bar>();
         for (int i = 0; i < scores.Length; i++)
         {
@@ -130,9 +134,14 @@ public class FileGenerator
                 Orientation = Orientation.Horizontal,
                 Size = 5,
             });
+
+            double textX = scores[i] + scores.Max() * 0.01;
+            double textY = positions[i];
+
+            var txt = plt.Add.Text($"{scores[i]:F1}", textX, textY);
+            txt.Alignment = Alignment.MiddleLeft;
         }
 
-        var plt = new ScottPlot.Plot();
         var barPlot = plt.Add.Bars(bars);
 
         plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
