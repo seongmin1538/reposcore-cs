@@ -3,11 +3,6 @@ using System.Text.Json;          // JSON 파싱
 using System.IO;                 // File, Path
 using System.Linq;
 
-// ───────────────────────────────────────────────────────
-// ① 캐시 시뮬레이션 상수 (현재는 항상 Disabled)
-// ───────────────────────────────────────────────────────
-
-
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
