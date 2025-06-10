@@ -87,14 +87,7 @@ public class RepoDataCollector
     }
 
     // 수집용 mutable 클래스 (Collect 메소드에서만 사용)
-    private class MutableUserActivity
-    {
-        public int PR_fb = 0; // 기능 개선(bug/enhancement) 라벨이 붙은 병합된 PR 수
-        public int PR_doc = 0; // documentation 라벨이 붙은 병합된 PR 수
-        public int PR_typo = 0; // typo 라벨이 붙은 병합된 PR 수
-        public int IS_fb = 0; // 기능 개선(bug/enhancement) 라벨이 붙은 이슈 수
-        public int IS_doc = 0; // documentation 라벨이 붙은 이슈 수
-    }
+  
     /// <summary>
     /// 지정된 저장소의 이슈 및 PR 데이터를 수집하여 사용자별 활동 내역을 반환합니다.
     /// </summary>
@@ -149,7 +142,7 @@ public class RepoDataCollector
             }
 
             // 수집용 mutable 객체. 모든 데이터 수집 후 레코드로 변환하여 반환
-            var mutableActivities = new Dictionary<string, MutableUserActivity>();
+            var mutableActivities = new Dictionary<string, UserActivity>();
 
             // allIssuesAndPRs의 데이터를 유저,라벨별로 분류
             foreach (var item in allIssuesAndPRs)
@@ -161,7 +154,7 @@ public class RepoDataCollector
                 // 처음 기록하는 사용자 초기화
                 if (!mutableActivities.ContainsKey(username))
                 {
-                    mutableActivities[username] = new MutableUserActivity();
+                    mutableActivities[username] = new UserActivity(0,0,0,0,0);
                 }
 
                 var labelName = item.Labels.Any() ? item.Labels[0].Name : null; // 라벨 구분을 위한 labelName
