@@ -7,6 +7,8 @@ public record UserActivity(
     int PR_typo,
     int IS_fb,
     int IS_doc
+
+    
 )
 {
 

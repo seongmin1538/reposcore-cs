@@ -175,5 +175,44 @@ public class FileGenerator
         Console.WriteLine($"✅ 차트 생성 완료: {outputPath}");
     }
 
+    public static void GenerateTotalChart(Dictionary<string, UserScore> mergedScores, string outputDir)
+    {
+        Directory.CreateDirectory(outputDir);
+
+        var labels = new List<string>();
+        var values = new List<double>();
+
+        foreach (var (user, score) in mergedScores.OrderBy(x => x.Value.total)) // 오름차순
+        {
+            labels.Add(user);
+            values.Add(score.total);
+        }
+
+        double[] scores = values.ToArray();
+        string[] names = labels.ToArray();
+        double[] positions = Enumerable.Range(0, names.Length).Select(i => (double)i).ToArray();
+
+        var bars = new List<Bar>();
+        for (int i = 0; i < scores.Length; i++)
+        {
+            bars.Add(new Bar
+            {
+                Position = positions[i],
+                Value = scores[i],
+                FillColor = Colors.MediumSeaGreen
+            });
+        }
+
+        var plt = new ScottPlot.Plot();
+        plt.Add.Bars(bars);
+        plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
+        plt.Title("🧮 Total User Scores (Merged)");
+        plt.XLabel("Total Score");
+        plt.YLabel("User");
+
+        string chartPath = Path.Combine(outputDir, "total_chart.png");
+        plt.SavePng(chartPath, 800, 600);
+        Console.WriteLine($"📊 통합 차트 저장됨: {chartPath}");
+    }
 
 }
