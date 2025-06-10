@@ -103,10 +103,36 @@ public class FileGenerator
         var labels = new List<string>();
         var values = new List<double>();
 
-        foreach (var (user, score) in _scores.OrderBy(x => x.Value.total)) // 오름차순
+        // total 점수 내림차순 정렬
+        var sorted = _scores.OrderByDescending(x => x.Value.total).ToList();
+        var rankList = new List<(int Rank, string User, double Score)>();
+        int rank = 1;
+        int count = 1;
+        double? prevScore = null;
+
+        foreach (var pair in sorted)
         {
-            labels.Add(user);
-            values.Add(score.total);
+            if (prevScore != null && pair.Value.total != prevScore)
+            {
+                rank = count;
+            }
+            rankList.Add((rank, pair.Key, pair.Value.total));
+            prevScore = pair.Value.total;
+            count++;
+        }
+
+        // 차트는 오름차순으로 표시
+        foreach (var item in rankList.OrderBy(x => x.Score))
+        {
+            string suffix = item.Rank switch
+            {
+                1 => "st",
+                2 => "nd",
+                3 => "rd",
+                _ => "th"
+            };
+            labels.Add($"{item.User} ({item.Rank}{suffix})");
+            values.Add(item.Score);
         }
 
         string[] names = labels.ToArray();
