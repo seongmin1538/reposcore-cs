@@ -44,7 +44,7 @@ public class FileGenerator
         // 파일에 "# 점수 계산 기준…" 을 쓰면, 이 줄이 CSV 첫 줄로 나옵니다.
         writer.WriteLine("# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1");
         // CSV 헤더
-        writer.WriteLine("User,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,total");
+        writer.WriteLine("User,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
 
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
