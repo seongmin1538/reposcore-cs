@@ -17,7 +17,6 @@ CoconaApp.Run((
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
     [Option("since", Description = "이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "Start date")] string? since,
     [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
-    [Option("dry-run", Description = "실제 작업 없이 시뮬레이션 로그만 출력")] bool dryRun,
     [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath
 ) =>
 {
@@ -56,110 +55,6 @@ CoconaApp.Run((
             Console.WriteLine("올바르지 못한 포멧입니다.");
             return;
         }
-    }
-    // ─────────────────────────────────────────────────────────────
-    // ①-0) dry-run일 경우: 실제 로직 실행 전 "시뮬레이션 로그" 출력 후 종료
-    // ─────────────────────────────────────────────────────────────
-    if (dryRun)
-    {
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            Console.WriteLine("[Dry-run] GitHub API를 호출하려면 --token 옵션이 필요합니다.");
-            return;
-        }
-        RepoDataCollector.CreateClient(token);
-        Console.WriteLine("===== Dry-Run 시뮬레이션 =====");
-        Console.WriteLine("분석 대상 저장소 목록:");
-        foreach (var repoPath in repos)
-        {
-            Console.WriteLine($"  - {repoPath}");
-        }
-        Console.WriteLine();
-
-        Console.WriteLine($"캐시 사용 여부: {(CACHE_ENABLED ? "Enabled" : "Disabled")}");
-        Console.WriteLine();
-
-        if (!string.IsNullOrEmpty(since) || !string.IsNullOrEmpty(until))
-        {
-            Console.WriteLine("분석 기간:");
-            if (!string.IsNullOrEmpty(since))
-                Console.WriteLine($"  • 시작: {since}");
-            if (!string.IsNullOrEmpty(until))
-                Console.WriteLine($"  • 종료: {until}");
-            Console.WriteLine();
-        }
-
-        Console.WriteLine("API 호출 예정 여부: Yes (GitHub API를 사용하여 데이터를 가져올 예정)");
-        Console.WriteLine();
-
-        // format과 outputDir을 시뮬레이션용으로 계산
-        List<string> _simFormats;
-        if (format == null || format.Length == 0)
-        {
-            _simFormats = new List<string> { "text", "csv", "chart", "html" };
-        }
-        else
-        {
-            _simFormats = checkFormat(format);
-        }
-        string _simOutputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
-
-        Console.WriteLine($"출력 디렉토리 예상 위치: {_simOutputDir}/<repoName>.[csv|txt]");
-        Console.WriteLine("생성될 파일 형식:");
-        foreach (var fmt in _simFormats)
-        {
-            if (fmt == "csv")
-                Console.WriteLine($"  · {_simOutputDir}/<repoName>.csv");
-            if (fmt == "text")
-                Console.WriteLine($"  · {_simOutputDir}/<repoName>.txt");
-            if (fmt == "chart")
-                Console.WriteLine($"  · [차트 기능 미구현으로 표시]");
-            if (fmt == "html")
-                Console.WriteLine($"  · [HTML 기능 미구현으로 표시]");
-        }
-
-        foreach (var repoPath in repos)
-        {
-            var parsed = TryParseRepoPath(repoPath);
-            if (parsed == null)
-            {
-                Console.WriteLine($"⚠️ 저장소 경로 무시됨 (형식 오류): {repoPath}");
-                continue;
-            }
-
-            var (owner, repo) = parsed.Value;
-            var collector = new RepoDataCollector(owner, repo);
-
-            Console.WriteLine($"\n[Dry-run] {owner}/{repo} 저장소 참여자 목록 조회 중...");
-
-            Dictionary<string, UserActivity> userActivities;
-            try
-            {
-                userActivities = collector.Collect(since: since, until: until); // ✅ 실제 참여자 목록 가져오기
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Dry-run] 참여자 정보를 가져오는 데 실패했습니다: {ex.Message}");
-                continue;
-            }
-
-            var participantIds = userActivities.Keys.ToList();
-            Console.WriteLine($"[Dry-run] 총 참여자 {participantIds.Count}명: {string.Join(", ", participantIds)}");
-
-            if (includeUsers != null && includeUsers.Length > 0)
-            {
-                Console.WriteLine($"[Dry-run] --include-user 필터 적용됨: {string.Join(", ", includeUsers)}");
-
-                var included = participantIds.Where(u => includeUsers.Contains(u)).ToList();
-                var excluded = participantIds.Except(included).ToList();
-
-                Console.WriteLine($"[Dry-run] 분석에 포함될 사용자: {string.Join(", ", included)}");
-                Console.WriteLine($"[Dry-run] 분석에서 제외될 사용자: {string.Join(", ", excluded)}");
-            }
-        }
-
-        Console.WriteLine("\n===== 시뮬레이션 종료 =====");
-        return;
     }
 
     // ───────────────────────────────────────────────────────
