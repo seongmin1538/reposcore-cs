@@ -22,6 +22,11 @@ public class RepoDataCollector
     private readonly string _owner; // 분석 대상 저장소의 owner (예: oss2025hnu)
     private readonly string _repo; // 분석 대상 저장소의 이름 (예: reposcore-cs)
 
+    //수정에 용이하도록 수집데이터종류 전역변수화
+    private static readonly string[] FeatureLabels = { "bug", "enhancement" };
+    private static readonly string[] DocsLabels = { "documentation" };
+    private static readonly string TypoLabel = "typo";
+
     // 생성자에는 저장소 하나의 정보를 넘김
     public RepoDataCollector(string owner, string repo)
     {
@@ -165,11 +170,11 @@ public class RepoDataCollector
                 {
                     if (item.PullRequest.Merged) // 병합된 PR만 집계
                     {
-                        if (labelName == "bug" || labelName == "enhancement")
+                        if (FeatureLabels.Contains(labelName))
                             activity.PR_fb++;
-                        else if (labelName == "documentation")
+                        else if (DocsLabels.Contains(labelName))
                             activity.PR_doc++;
-                        else if (labelName == "typo")
+                        else if (labelName == TypoLabel)
                             activity.PR_typo++;
                     }
                 }
@@ -178,9 +183,9 @@ public class RepoDataCollector
                     if (item.State.Value.ToString() == "Open" ||
                         item.StateReason.ToString() == "completed") // 열려있거나 정상적으로 닫힌 이슈들만 집계
                     {
-                        if (labelName == "bug" || labelName == "enhancement")
+                        if (FeatureLabels.Contains(labelName))
                             activity.IS_fb++;
-                        else if (labelName == "documentation")
+                        else if (DocsLabels.Contains(labelName))
                             activity.IS_doc++;
 
                     }
