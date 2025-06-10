@@ -99,6 +99,8 @@ public class RepoDataCollector
     /// 지정된 저장소의 이슈 및 PR 데이터를 수집하여 사용자별 활동 내역을 반환합니다.
     /// </summary>
     /// <param name="returnDummyData">더미 데이터를 사용할지 여부 (테스트 용도)</param>
+    /// <param name="since">이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD 형식)</param>
+    /// <param name="until">이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD 형식)</param>
     /// <returns>
     /// 사용자 로그인명을 키로 하고 활동 내역(UserActivity)을 값으로 갖는 Dictionary
     /// </returns>
@@ -107,7 +109,7 @@ public class RepoDataCollector
     /// <exception cref="NotFoundException">저장소를 찾을 수 없을 경우</exception>
     /// <exception cref="Exception">기타 알 수 없는 예외 발생 시</exception>
     // Collect 메소드
-    public Dictionary<string, UserActivity> Collect(bool returnDummyData = false)
+    public Dictionary<string, UserActivity> Collect(bool returnDummyData = false, string? since = null, string? until = null)
     {
         if (returnDummyData)
         {
@@ -117,10 +119,34 @@ public class RepoDataCollector
         try
         {
             // Issues수집 (RP포함)
-            var allIssuesAndPRs = _client!.Issue.GetAllForRepository(_owner, _repo, new RepositoryIssueRequest
+            var request = new RepositoryIssueRequest
             {
                 State = ItemStateFilter.All
-            }).Result;
+            };
+
+            if (!string.IsNullOrEmpty(since))
+            {
+                if (DateTime.TryParse(since, out DateTime sinceDate))
+                {
+                    request.Since = sinceDate;
+                }
+                else
+                {
+                    throw new ArgumentException($"잘못된 시작 날짜 형식입니다: {since}. YYYY-MM-DD 형식으로 입력해주세요.");
+                }
+            }
+
+            var allIssuesAndPRs = _client!.Issue.GetAllForRepository(_owner, _repo, request).Result;
+
+            // until 날짜 필터링 적용
+            if (!string.IsNullOrEmpty(until))
+            {
+                if (!DateTime.TryParse(until, out DateTime untilDate))
+                {
+                    throw new ArgumentException($"잘못된 종료 날짜 형식입니다: {until}. YYYY-MM-DD 형식으로 입력해주세요.");
+                }
+                allIssuesAndPRs = allIssuesAndPRs.Where(issue => issue.CreatedAt <= untilDate).ToList();
+            }
 
             // 수집용 mutable 객체. 모든 데이터 수집 후 레코드로 변환하여 반환
             var mutableActivities = new Dictionary<string, MutableUserActivity>();
