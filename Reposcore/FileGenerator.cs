@@ -18,7 +18,17 @@ public class FileGenerator
         _scores = repoScores;
         _repoName = repoName;
         _folderPath = Path.Combine(folderPath, repoName);
-        Directory.CreateDirectory(_folderPath);
+
+        try
+        {
+            Directory.CreateDirectory(_folderPath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❗ 결과 디렉토리 생성에 실패했습니다. (경로: {_folderPath})");
+            Console.WriteLine($"→ 디스크 권한이나 경로 오류를 확인하세요: {ex.Message}");
+            Environment.Exit(1);
+        }
     }
 
     double sumOfPR
