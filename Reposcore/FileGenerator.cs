@@ -98,6 +98,20 @@ public class FileGenerator
         Console.WriteLine($"{filePath} 생성됨");
     }
 
+    public void GenerateTotalText(string outputPath)
+    {
+        var table = new ConsoleTable("이름", "PR_fb", "PR_doc", "PR_typo", "IS_fb", "IS_doc", "총점");
+
+        foreach (var (user, score) in _scores.OrderByDescending(x => x.Value.total))
+        {
+            table.AddRow(user, score.PR_fb, score.PR_doc, score.PR_typo, score.IS_fb, score.IS_doc, score.total);
+        }
+
+        string result = table.ToMinimalString();
+        File.WriteAllText(outputPath, result);
+        Console.WriteLine($"✅ 텍스트 결과 생성 완료: {outputPath}");
+    }
+
     public void GenerateChart()
     {
         var labels = new List<string>();
@@ -137,7 +151,7 @@ public class FileGenerator
 
         string[] names = labels.ToArray();
         double[] scores = values.ToArray();
-        
+
         // ✅ 간격 조절된 Position
         double spacing = 10; // 막대 간격
         double[] positions = Enumerable.Range(0, names.Length)

@@ -78,6 +78,7 @@ CoconaApp.Run((
     // 저장소별 라벨 통계 요약 정보를 저장할 리스트
     var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
     var failedRepos = new List<string>(); // ❗ 실패한 저장소 목록 수집용
+    var totalScores = new Dictionary<string, UserScore>();
 
     // _client 초기화 
     RepoDataCollector.CreateClient(token);
@@ -184,16 +185,16 @@ CoconaApp.Run((
             // ───────────────────────────────────────────────────────
             string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
-    // C) ID→이름 치환: userInfoPath가 주어졌으면 매핑, 아니면 원래 ID 유지
-    var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
-    var finalScores = idToNameMap != null
-        ? rawScores.ToDictionary(
-            kvp => idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
-            kvp => kvp.Value,
-            StringComparer.OrdinalIgnoreCase)
-        : rawScores;
+            // C) ID→이름 치환: userInfoPath가 주어졌으면 매핑, 아니면 원래 ID 유지
+            var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
+            var finalScores = idToNameMap != null
+                ? rawScores.ToDictionary(
+                    kvp => idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
+                    kvp => kvp.Value,
+                    StringComparer.OrdinalIgnoreCase)
+                : rawScores;
 
-    var generator = new FileGenerator(finalScores, repo, outputDir);
+            var generator = new FileGenerator(finalScores, repo, outputDir);
 
             if (formats.Contains("csv"))
             {
@@ -211,13 +212,38 @@ CoconaApp.Run((
             {
                 Console.WriteLine("html 파일 생성이 아직 구현되지 않았습니다.");
             }
+             // 👉 totalScores에 병합
+            foreach (var (user, score) in finalScores)
+            {
+                if (!totalScores.ContainsKey(user))
+                    totalScores[user] = score;
+                else
+                {
+                    var existing = totalScores[user];
+                    totalScores[user] = new UserScore(
+                        existing.PR_fb + score.PR_fb,
+                        existing.PR_doc + score.PR_doc,
+                        existing.PR_typo + score.PR_typo,
+                        existing.IS_fb + score.IS_fb,
+                        existing.IS_doc + score.IS_doc,
+                        existing.total + score.total
+                    );
+                }
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"! 오류 발생: {ex.Message}");
         }
     }
-
+    // 👉 total.txt 출력
+    if (totalScores.Count > 0)
+    {
+        string totalOutputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
+        string totalPath = Path.Combine(totalOutputDir, "total.txt");
+        var totalGen = new FileGenerator(totalScores, "total", totalOutputDir);
+        totalGen.GenerateTotalText(totalPath); // 이 메서드는 다음 단계에서 정의합니다.
+    }
     // 전체 저장소 요약 테이블 출력
     if (summaries.Count > 0)
     {
