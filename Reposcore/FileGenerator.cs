@@ -137,8 +137,8 @@ public class FileGenerator
 
         plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
         plt.Title($"Scores - {_repoName}");
-        plt.XLabel("총 점수");
-        plt.YLabel("사용자");
+        plt.XLabel("Total Score");
+        plt.YLabel("User");
 
         // x축 범위 설정
         plt.Axes.Bottom.Min = 0;
