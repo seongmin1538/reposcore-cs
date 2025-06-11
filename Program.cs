@@ -1,4 +1,4 @@
-﻿using Cocona;
+using Cocona;
 using System.Text.Json;          // JSON 파싱
 using System.IO;                 // File, Path
 using System.Linq;
@@ -14,7 +14,9 @@ CoconaApp.Run((
     [Option("since", Description = "이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "Start date")] string? since,
     [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
     [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
-    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false
+    [Option("progress", Description = "API 호출 진행률을 표시합니다.")] bool progress,
+    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false,
+    [Option("show-state-summary", Description = "PR/Issue 상태 요약을 표시합니다.")] bool showStateSummary = false
 ) =>
 {
     // 캐시 디렉토리 생성
@@ -85,55 +87,49 @@ CoconaApp.Run((
     RepoDataCollector.CreateClient(token);
 
     var totalScores = new Dictionary<string, UserScore>(); // 🆕 total score 집계용
+    int totalRepos = repos.Length;
+    int repoIndex = 0;
 
     foreach (var repoPath in repos)
     {
+        repoIndex++;
         var parsed = TryParseRepoPath(repoPath);
         if (parsed == null) { failedRepos.Add(repoPath); continue; }
         var (owner, repo) = parsed.Value;
-      
-        var cacheFilePath = Path.Combine(CACHE_DIR, $"{owner}_{repo}.json");
+        var collector = new RepoDataCollector(owner, repo);
 
-        Dictionary<string, UserActivity>? userActivities = null;
-
-        // 캐시 사용 옵션이 있고 캐시 파일이 존재하는 경우
-        if (useCache && File.Exists(cacheFilePath))
+        if (progress)
         {
-            try
-            {
-                var json = File.ReadAllText(cacheFilePath);
-                userActivities = JsonSerializer.Deserialize<Dictionary<string, UserActivity>>(json);
-                Console.WriteLine($"📦 캐시에서 데이터를 로드했습니다: {owner}/{repo}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ 캐시 파일 로드 실패: {ex.Message}");
-            }
+            Console.Write($"\r▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo}...\n");
+            Console.Out.Flush();
         }
 
-        // 캐시에서 데이터를 가져오지 못한 경우 GitHub API 호출
-        if (userActivities == null)
+        Dictionary<string, UserActivity> userActivities;
+        try
         {
-            // collector 생성
-            var collector = new RepoDataCollector(owner, repo);
-
-            // 데이터 수집
+            if (progress)
+            {
+                Console.Write($"\r▶ 전체({repoIndex}/{totalRepos}) PR 및 Issue 불러오는 중...");
+                Console.Out.Flush();
+            }
             userActivities = collector.Collect(since: since, until: until);
-
-            // 캐시 저장
-            try
+            if (progress)
             {
-                var json = JsonSerializer.Serialize(userActivities, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(cacheFilePath, json);
-                Console.WriteLine($"💾 데이터를 캐시에 저장했습니다: {owner}/{repo}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ 캐시 저장 실패: {ex.Message}");
+                Console.WriteLine(" OK");
             }
         }
+        catch (Exception ex)
+        {
+            if (progress)
+            {
+                Console.WriteLine(" 실패");
+            }
+            Console.WriteLine($"! 오류 발생: {ex.Message}");
+            continue;
+        }
 
-        Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
+        if (!progress)
+            Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}\n");
 
         try
         {
@@ -179,11 +175,15 @@ CoconaApp.Run((
             if (formats.Contains("text")) generator.GenerateTable();
             if (formats.Contains("chart")) generator.GenerateChart();
             if (formats.Contains("html")) Console.WriteLine("html 파일 생성이 아직 구현되지 않았습니다.");
+            if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"! 오류 발생: {ex.Message}");
         }
+
+        if (progress)
+            Console.WriteLine($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
     }
 
     // 🆕 totalChart 출력
@@ -211,6 +211,11 @@ CoconaApp.Run((
     {
         Console.WriteLine("\n❌ 처리되지 않은 저장소 목록:");
         foreach (var r in failedRepos) Console.WriteLine($"- {r} (올바른 형식: owner/repo)");
+    }
+
+    if (progress)
+    {
+        Console.WriteLine("완료");
     }
 });
 

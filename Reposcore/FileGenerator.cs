@@ -194,5 +194,16 @@ public class FileGenerator
         Console.WriteLine($"✅ 차트 생성 완료: {outputPath}");
     }
 
+    public void GenerateStateSummary(RepoStateSummary summary)
+    {
+        string filePath = Path.Combine(_folderPath, $"{_repoName}_state.txt");
+        using StreamWriter writer = new StreamWriter(filePath);
+        writer.WriteLine($"Merged PR: {summary.MergedPR}");
+        writer.WriteLine($"Unmerged PR: {summary.UnmergedPR}");
+        writer.WriteLine($"Open Issue: {summary.OpenIssue}");
+        writer.WriteLine($"Closed Issue: {summary.ClosedIssue}");
+        Console.WriteLine($"{filePath} 생성됨");
+    }
+
 
 }

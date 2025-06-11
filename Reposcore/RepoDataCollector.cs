@@ -27,6 +27,9 @@ public class RepoDataCollector
     private static readonly string[] DocsLabels = { "documentation" };
     private static readonly string TypoLabel = "typo";
 
+    public RepoStateSummary StateSummary { get; private set; } =
+        new RepoStateSummary(0, 0, 0, 0);
+
     // 생성자에는 저장소 하나의 정보를 넘김
     public RepoDataCollector(string owner, string repo)
     {
@@ -148,6 +151,10 @@ public class RepoDataCollector
 
             // 수집용 mutable 객체. 모든 데이터 수집 후 레코드로 변환하여 반환
             var mutableActivities = new Dictionary<string, UserActivity>();
+            int mergedPr = 0;
+            int unmergedPr = 0;
+            int openIssue = 0;
+            int closedIssue = 0;
 
             // allIssuesAndPRs의 데이터를 유저,라벨별로 분류
             foreach (var item in allIssuesAndPRs)
@@ -168,8 +175,9 @@ public class RepoDataCollector
 
                 if (item.PullRequest != null) // PR일 경우
                 {
-                    if (item.PullRequest.Merged) // 병합된 PR만 집계
+                    if (item.PullRequest.Merged)
                     {
+                        mergedPr++;
                         if (FeatureLabels.Contains(labelName))
                             activity.PR_fb++;
                         else if (DocsLabels.Contains(labelName))
@@ -177,17 +185,31 @@ public class RepoDataCollector
                         else if (labelName == TypoLabel)
                             activity.PR_typo++;
                     }
+                    else
+                    {
+                        unmergedPr++;
+                    }
                 }
                 else
                 {
-                    if (item.State.Value.ToString() == "Open" ||
-                        item.StateReason.ToString() == "completed") // 열려있거나 정상적으로 닫힌 이슈들만 집계
+                    if (item.State.Value.ToString() == "Open")
                     {
+                        openIssue++;
                         if (FeatureLabels.Contains(labelName))
                             activity.IS_fb++;
                         else if (DocsLabels.Contains(labelName))
                             activity.IS_doc++;
-
+                    }
+                    else if (item.State.Value.ToString() == "Closed")
+                    {
+                        closedIssue++;
+                        if (item.StateReason.ToString() == "completed")
+                        {
+                            if (FeatureLabels.Contains(labelName))
+                                activity.IS_fb++;
+                            else if (DocsLabels.Contains(labelName))
+                                activity.IS_doc++;
+                        }
                     }
                 }
             }
@@ -204,6 +226,8 @@ public class RepoDataCollector
                     IS_doc: value.IS_doc
                 );
             }
+
+            StateSummary = new RepoStateSummary(mergedPr, unmergedPr, openIssue, closedIssue);
 
             return userActivities;
         }

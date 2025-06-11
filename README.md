@@ -7,7 +7,7 @@ A CLI for scoring student participation in an open-source class repo, implemente
 아래는 `dotnet run -- -h` 또는 `dotnet run -- -help`실행 결과를 붙여넣은 것이므로 명령줄 관련 코드가 변경되면 아래 내용도 그에 맞게 수정해야 함.
 
 ```bash
-Usage: reposcore-cs [--verbose] [--output <Output directory>] [--format <Output format>...] [--token <Github token>] [--include-user <Include user's id>...] [--help] [--version] repos0 ... reposN
+Usage: reposcore-cs [--verbose] [--output <Output directory>] [--format <Output format>...] [--token <Github token>] [--include-user <Include user's id>...] [--progress] [--help] [--version] repos0 ... reposN
 
 reposcore-cs
 
@@ -20,6 +20,8 @@ Options:
   -f, --format <Output format>...          출력 형식 지정 ("text", "csv", "chart", "html", "all", default : "all")
   -t, --token <Github token>               GitHub 액세스 토큰 입력
   --include-user <Include user's id>...    결과에 포함할 사용자 ID 목록
+  --progress                               API 호출 진행률을 표시합니다.
+  --show-state-summary                     PR/Issue 상태 요약을 표시합니다.
   -h, --help                               Show help message
   --version                                Show version
 ```
