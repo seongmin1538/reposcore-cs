@@ -54,15 +54,15 @@ public class RepoDataCollector
             }
             catch (IOException ioEx)
             {
-                Console.WriteLine($"❗ .env 파일 쓰기 중 IO 오류가 발생했습니다: {ioEx.Message}");
+                PrintHelper.PrintError($"❗ .env 파일 쓰기 중 IO 오류가 발생했습니다: {ioEx.Message}");
             }
             catch (UnauthorizedAccessException uaEx)
             {
-                Console.WriteLine($"❗ .env 파일 쓰기 권한이 없습니다: {uaEx.Message}");
+                PrintHelper.PrintError($"❗ .env 파일 쓰기 권한이 없습니다: {uaEx.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❗ .env 파일 쓰기 중 알 수 없는 오류가 발생했습니다: {ex.Message}");
+                PrintHelper.PrintError($"❗ .env 파일 쓰기 중 알 수 없는 오류가 발생했습니다: {ex.Message}");
             }
 
             _client.Credentials = new Credentials(token);
@@ -77,7 +77,7 @@ public class RepoDataCollector
 
                     if (string.IsNullOrEmpty(token))
                     {
-                        Console.WriteLine("❗ .env 파일에는 GITHUB_TOKEN이 포함되어 있지 않습니다.");
+                        PrintHelper.PrintError("❗ .env 파일에는 GITHUB_TOKEN이 포함되어 있지 않습니다.");
                     }
                     else
                     {
@@ -86,12 +86,12 @@ public class RepoDataCollector
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❗ .env 파일 로딩 중 오류가 발생했습니다: {ex.Message}");
+                PrintHelper.PrintError($"❗ .env 파일 로딩 중 오류가 발생했습니다: {ex.Message}");
             }
         }
         else
         {
-            Console.WriteLine("❗ 인증 토큰이 제공되지 않았고 .env 파일도 존재하지 않습니다. 인증이 실패할 수 있습니다.");
+            PrintHelper.PrintError("❗ 인증 토큰이 제공되지 않았고 .env 파일도 존재하지 않습니다. 인증이 실패할 수 있습니다.");
         }
     }
 
@@ -115,7 +115,7 @@ public class RepoDataCollector
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❗ 캐시 파일 로드 중 오류 발생: {ex.Message}");
+            PrintHelper.PrintError($"❗ 캐시 파일 로드 중 오류 발생: {ex.Message}");
             return null;
         }
     }
@@ -131,7 +131,7 @@ public class RepoDataCollector
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❗ 캐시 파일 저장 중 오류 발생: {ex.Message}");
+            PrintHelper.PrintError($"❗ 캐시 파일 저장 중 오류 발생: {ex.Message}");
         }
     }
 
@@ -294,28 +294,28 @@ public class RepoDataCollector
                 var resetTime = coreRateLimit.Reset; // UTC DateTime
                 var secondsUntilReset = (int)(resetTime - DateTimeOffset.UtcNow).TotalSeconds;
 
-                Console.WriteLine($"❗[{_owner}/{_repo}] API 호출 한도(Rate Limit)를 초과했습니다. {secondsUntilReset}초 후 재시도 가능합니다 (약 {resetTime.LocalDateTime} 기준).");
+                PrintHelper.PrintError($"❗[{_owner}/{_repo}] API 호출 한도(Rate Limit)를 초과했습니다. {secondsUntilReset}초 후 재시도 가능합니다 (약 {resetTime.LocalDateTime} 기준).");
             }
             catch (Exception innerEx)
             {
-                Console.WriteLine($"❗[{_owner}/{_repo}] API 호출 한도 초과, 재시도 시간을 가져오는 데 실패했습니다: {innerEx.Message}");
+                PrintHelper.PrintError($"❗[{_owner}/{_repo}] API 호출 한도 초과, 재시도 시간을 가져오는 데 실패했습니다: {innerEx.Message}");
             }
 
             Environment.Exit(1);
         }
         catch (AuthorizationException)
         {
-            Console.WriteLine("❗[{_owner}/{_repo}] 인증 실패: 올바른 토큰을 사용했는지 확인하세요.");
+            PrintHelper.PrintError($"❗[{_owner}/{_repo}] 인증 실패: 올바른 토큰을 사용했는지 확인하세요.");
             Environment.Exit(1);
         }
         catch (NotFoundException)
         {
-            Console.WriteLine("❗[{_owner}/{_repo}] 저장소를 찾을 수 없습니다. owner/repo 이름을 확인하세요.");
+            PrintHelper.PrintError($"❗[{_owner}/{_repo}] 저장소를 찾을 수 없습니다. owner/repo 이름을 확인하세요.");
             Environment.Exit(1);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❗[{_owner}/{_repo}] 알 수 없는 오류가 발생했습니다: {ex.Message}");
+            PrintHelper.PrintError($"❗[{_owner}/{_repo}] 알 수 없는 오류가 발생했습니다: {ex.Message}");
             Environment.Exit(1);
         }
         return null!;

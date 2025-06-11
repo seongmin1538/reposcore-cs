@@ -50,7 +50,7 @@ CoconaApp.Run((
             }
             else
             {
-                Console.WriteLine("올바르지 못한 포멧입니다.");
+                PrintHelper.PrintError("올바르지 못한 포멧입니다.");
                 return;
             }
             if (idToNameMap == null || idToNameMap.Count == 0)
@@ -58,7 +58,7 @@ CoconaApp.Run((
         }
         catch
         {
-            Console.WriteLine("올바르지 못한 포멧입니다.");
+            PrintHelper.PrintError("올바르지 못한 포멧입니다.");
             return;
         }
     }
@@ -69,7 +69,7 @@ CoconaApp.Run((
     if (string.IsNullOrWhiteSpace(output))
     {
         // 실제 디폴트 값은 코드에서 "output"으로 설정되어 있음
-        Console.WriteLine("출력 디렉토리가 지정되지 않아 기본 경로 'output/'이 사용됩니다.");
+        PrintHelper.PrintWarning("출력 디렉토리가 지정되지 않아 기본 경로 'output/'이 사용됩니다.");
     }
 
     // ───────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ CoconaApp.Run((
     if (format == null || format.Length == 0)
     {
         // 여기서 기본값 배열은 {"text", "csv", "chart", "html"}으로 설정됨
-        Console.WriteLine("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
+        PrintHelper.PrintWarning("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
     }
 
     var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
@@ -115,7 +115,7 @@ CoconaApp.Run((
             userActivities = collector.Collect(since: since, until: until, useCache: useCache);
             if (progress)
             {
-                Console.WriteLine(" OK");
+                PrintHelper.PrintSuccess(" OK");
             }
         }
         catch (Exception ex)
@@ -124,7 +124,7 @@ CoconaApp.Run((
             {
                 Console.WriteLine(" 실패");
             }
-            Console.WriteLine($"! 오류 발생: {ex.Message}");
+            PrintHelper.PrintError($"! 오류 발생: {ex.Message}");
             continue;
         }
 
@@ -174,16 +174,16 @@ CoconaApp.Run((
             if (formats.Contains("csv")) generator.GenerateCsv();
             if (formats.Contains("text")) generator.GenerateTable();
             if (formats.Contains("chart")) generator.GenerateChart();
-            if (formats.Contains("html")) Console.WriteLine("html 파일 생성이 아직 구현되지 않았습니다.");
+            if (formats.Contains("html")) PrintHelper.PrintWarning("html 파일 생성이 아직 구현되지 않았습니다.");
             if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"! 오류 발생: {ex.Message}");
+            PrintHelper.PrintError($"! 오류 발생: {ex.Message}");
         }
 
         if (progress)
-            Console.WriteLine($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
+            PrintHelper.PrintInfo($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
     }
 
     // 🆕 totalChart 출력
@@ -196,7 +196,7 @@ CoconaApp.Run((
 
     if (summaries.Count > 0)
     {
-        Console.WriteLine("\n📊 전체 저장소 요약 통계");
+        PrintHelper.PrintHeader("\n📊 전체 저장소 요약 통계");
         Console.WriteLine("----------------------------------------------------");
         Console.WriteLine($"{"Repo",-30} {"B/F",5} {"Doc",5} {"typo",5}");
         Console.WriteLine("----------------------------------------------------");
@@ -209,13 +209,13 @@ CoconaApp.Run((
 
     if (failedRepos.Count > 0)
     {
-        Console.WriteLine("\n❌ 처리되지 않은 저장소 목록:");
+        PrintHelper.PrintError("\n❌ 처리되지 않은 저장소 목록:");
         foreach (var r in failedRepos) Console.WriteLine($"- {r} (올바른 형식: owner/repo)");
     }
 
     if (progress)
     {
-        Console.WriteLine("완료");
+        PrintHelper.PrintSuccess("완료");
     }
 });
 
@@ -231,7 +231,7 @@ static List<string> checkFormat(string[] format)
         var f = fm.Trim().ToLowerInvariant();
         if (f.IndexOfAny(invalidChars) >= 0)
         {
-            Console.WriteLine($"포맷 '{f}'에는 사용할 수 없는 문자가 포함되어 있습니다.");
+            PrintHelper.PrintError($"포맷 '{f}'에는 사용할 수 없는 문자가 포함되어 있습니다.");
             Environment.Exit(1);
         }
         if (FormatList.Contains(f)) validFormats.Add(f);
@@ -240,7 +240,7 @@ static List<string> checkFormat(string[] format)
 
     if (unValidFormats.Count != 0)
     {
-        Console.WriteLine("유효하지 않은 포맷 존재: " + string.Join(", ", unValidFormats));
+        PrintHelper.PrintError("유효하지 않은 포맷 존재: " + string.Join(", ", unValidFormats));
         Environment.Exit(1);
     }
 
@@ -254,7 +254,7 @@ static (string, string)? TryParseRepoPath(string repoPath)
     var parts = repoPath.Split('/');
     if (parts.Length != 2)
     {
-        Console.WriteLine($"⚠️ 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
+        PrintHelper.PrintError($"⚠️ 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
         return null;
     }
     return (parts[0], parts[1]);
