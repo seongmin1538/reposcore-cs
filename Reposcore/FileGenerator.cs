@@ -181,7 +181,7 @@ public class FileGenerator
         plt.Axes.Bottom.Max = scores.Max() * 1.1; // 최대값의 110%까지 표시
 
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
-        plt.SavePng(outputPath, 1920, 1080);
+        plt.SavePng(outputPath, 1080, 1920);
         Console.WriteLine($"✅ 차트 생성 완료: {outputPath}");
     }
 
