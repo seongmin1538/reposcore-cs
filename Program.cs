@@ -174,7 +174,7 @@ CoconaApp.Run((
             if (formats.Contains("csv")) generator.GenerateCsv();
             if (formats.Contains("text")) generator.GenerateTable();
             if (formats.Contains("chart")) generator.GenerateChart();
-            if (formats.Contains("html")) Console.WriteLine("html 파일 생성이 아직 구현되지 않았습니다.");
+            if (formats.Contains("html")) generator.GenerateHtml();
             if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
         }
         catch (Exception ex)
