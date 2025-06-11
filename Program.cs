@@ -81,7 +81,6 @@ CoconaApp.Run((
         Console.WriteLine("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
     }
 
-    var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
     var failedRepos = new List<string>();
 
     RepoDataCollector.CreateClient(token);
@@ -133,10 +132,6 @@ CoconaApp.Run((
 
         try
         {
-            Dictionary<string, int> labelCounts = new() {
-                { "bug", 0 }, { "documentation", 0 }, { "typo", 0 }
-            };
-
             var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
             var finalScores = idToNameMap != null
                 ? rawScores.ToDictionary(
@@ -192,19 +187,6 @@ CoconaApp.Run((
         string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
         var totalGen = new FileGenerator(totalScores, "total", outputDir);
         totalGen.GenerateChart();
-    }
-
-    if (summaries.Count > 0)
-    {
-        Console.WriteLine("\n📊 전체 저장소 요약 통계");
-        Console.WriteLine("----------------------------------------------------");
-        Console.WriteLine($"{"Repo",-30} {"B/F",5} {"Doc",5} {"typo",5}");
-        Console.WriteLine("----------------------------------------------------");
-
-        foreach (var (repoName, counts) in summaries)
-        {
-            Console.WriteLine($"{repoName,-30} {counts["bug"],5} {counts["documentation"],5} {counts["typo"],5}");
-        }
     }
 
     if (failedRepos.Count > 0)
