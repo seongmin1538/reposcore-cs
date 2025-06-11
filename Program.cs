@@ -15,7 +15,8 @@ CoconaApp.Run((
     [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
     [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
     [Option("progress", Description = "API 호출 진행률을 표시합니다.")] bool progress,
-    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false
+    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false,
+    [Option("show-state-summary", Description = "PR/Issue 상태 요약을 표시합니다.")] bool showStateSummary = false
 ) =>
 {
     // 캐시 디렉토리 생성
@@ -174,6 +175,7 @@ CoconaApp.Run((
             if (formats.Contains("text")) generator.GenerateTable();
             if (formats.Contains("chart")) generator.GenerateChart();
             if (formats.Contains("html")) Console.WriteLine("html 파일 생성이 아직 구현되지 않았습니다.");
+            if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
         }
         catch (Exception ex)
         {

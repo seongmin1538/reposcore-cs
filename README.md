@@ -21,6 +21,7 @@ Options:
   -t, --token <Github token>               GitHub 액세스 토큰 입력
   --include-user <Include user's id>...    결과에 포함할 사용자 ID 목록
   --progress                               API 호출 진행률을 표시합니다.
+  --show-state-summary                     PR/Issue 상태 요약을 표시합니다.
   -h, --help                               Show help message
   --version                                Show version
 ```
