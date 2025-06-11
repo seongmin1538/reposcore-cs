@@ -1,4 +1,4 @@
-using Cocona;
+﻿using Cocona;
 using System.Text.Json;          // JSON 파싱
 using System.IO;                 // File, Path
 using System.Linq;
@@ -112,7 +112,7 @@ CoconaApp.Run((
                 Console.Write($"\r▶ 전체({repoIndex}/{totalRepos}) PR 및 Issue 불러오는 중...");
                 Console.Out.Flush();
             }
-            userActivities = collector.Collect(since: since, until: until);
+            userActivities = collector.Collect(since: since, until: until, useCache: useCache);
             if (progress)
             {
                 Console.WriteLine(" OK");
