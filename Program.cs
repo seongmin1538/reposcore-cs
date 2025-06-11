@@ -1,13 +1,8 @@
-﻿using Cocona;
+using Cocona;
 using System.Text.Json;          // JSON 파싱
 using System.IO;                 // File, Path
 using System.Linq;
 using System.Collections.Generic;
-
-// ───────────────────────────────────────────────────────
-// ① 캐시 시뮬레이션 상수 (현재는 항상 Disabled)
-// ───────────────────────────────────────────────────────
-const bool CACHE_ENABLED = false;
 
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
@@ -19,9 +14,17 @@ CoconaApp.Run((
     [Option("since", Description = "이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "Start date")] string? since,
     [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
     [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
-    [Option("progress", Description = "API 호출 진행률을 표시합니다.")] bool progress
+    [Option("progress", Description = "API 호출 진행률을 표시합니다.")] bool progress,
+    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false
 ) =>
 {
+    // 캐시 디렉토리 생성
+    const string CACHE_DIR = "cache";
+    if (!Directory.Exists(CACHE_DIR))
+    {
+        Directory.CreateDirectory(CACHE_DIR);
+    }
+
     // ───────────────────────────────────────────────────────
     // A) user-info 옵션으로 전달된 JSON/CSV 파일을 파싱해서 idToNameMap에 저장
     // ───────────────────────────────────────────────────────
@@ -96,7 +99,7 @@ CoconaApp.Run((
 
         if (progress)
         {
-            Console.Write($"\r▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo}...");
+            Console.Write($"\r▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo}...\n");
             Console.Out.Flush();
         }
 
@@ -125,7 +128,7 @@ CoconaApp.Run((
         }
 
         if (!progress)
-            Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
+            Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}\n");
 
         try
         {
