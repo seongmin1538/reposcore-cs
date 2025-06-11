@@ -18,7 +18,8 @@ CoconaApp.Run((
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
     [Option("since", Description = "이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "Start date")] string? since,
     [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
-    [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath
+    [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
+    [Option("progress", Description = "API 호출 진행률을 표시합니다.")] bool progress
 ) =>
 {
     // ───────────────────────────────────────────────────────
@@ -82,16 +83,49 @@ CoconaApp.Run((
     RepoDataCollector.CreateClient(token);
 
     var totalScores = new Dictionary<string, UserScore>(); // 🆕 total score 집계용
+    int totalRepos = repos.Length;
+    int repoIndex = 0;
 
     foreach (var repoPath in repos)
     {
+        repoIndex++;
         var parsed = TryParseRepoPath(repoPath);
         if (parsed == null) { failedRepos.Add(repoPath); continue; }
         var (owner, repo) = parsed.Value;
         var collector = new RepoDataCollector(owner, repo);
-        var userActivities = collector.Collect(since: since, until: until);
 
-        Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
+        if (progress)
+        {
+            Console.Write($"\r▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo}...");
+            Console.Out.Flush();
+        }
+
+        Dictionary<string, UserActivity> userActivities;
+        try
+        {
+            if (progress)
+            {
+                Console.Write($"\r▶ 전체({repoIndex}/{totalRepos}) PR 및 Issue 불러오는 중...");
+                Console.Out.Flush();
+            }
+            userActivities = collector.Collect(since: since, until: until);
+            if (progress)
+            {
+                Console.WriteLine(" OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (progress)
+            {
+                Console.WriteLine(" 실패");
+            }
+            Console.WriteLine($"! 오류 발생: {ex.Message}");
+            continue;
+        }
+
+        if (!progress)
+            Console.WriteLine($"\n🔍 처리 중: {owner}/{repo}");
 
         try
         {
@@ -142,6 +176,9 @@ CoconaApp.Run((
         {
             Console.WriteLine($"! 오류 발생: {ex.Message}");
         }
+
+        if (progress)
+            Console.WriteLine($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
     }
 
     // 🆕 totalChart 출력
@@ -169,6 +206,11 @@ CoconaApp.Run((
     {
         Console.WriteLine("\n❌ 처리되지 않은 저장소 목록:");
         foreach (var r in failedRepos) Console.WriteLine($"- {r} (올바른 형식: owner/repo)");
+    }
+
+    if (progress)
+    {
+        Console.WriteLine("완료");
     }
 });
 
