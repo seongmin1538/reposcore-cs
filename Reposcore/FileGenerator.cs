@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Drawing;
 using ConsoleTables;
 using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.TickGenerators;
+using Alignment = ScottPlot.Alignment;
+using Color = System.Drawing.Color;
 
 public class FileGenerator
 {
@@ -18,7 +21,17 @@ public class FileGenerator
         _scores = repoScores;
         _repoName = repoName;
         _folderPath = Path.Combine(folderPath, repoName);
-        Directory.CreateDirectory(_folderPath);
+
+        try
+        {
+            Directory.CreateDirectory(_folderPath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❗ 결과 디렉토리 생성에 실패했습니다. (경로: {_folderPath})");
+            Console.WriteLine($"→ 디스크 권한이나 경로 오류를 확인하세요: {ex.Message}");
+            Environment.Exit(1);
+        }
     }
 
     double sumOfPR
@@ -159,6 +172,7 @@ public class FileGenerator
                                     .ToArray();
 
         // Bar 데이터 생성
+        var plt = new ScottPlot.Plot();
         var bars = new List<Bar>();
         for (int i = 0; i < scores.Length; i++)
         {
@@ -170,9 +184,14 @@ public class FileGenerator
                 Orientation = Orientation.Horizontal,
                 Size = 5,
             });
+
+            double textX = scores[i] + scores.Max() * 0.01;
+            double textY = positions[i];
+
+            var txt = plt.Add.Text($"{scores[i]:F1}", textX, textY);
+            txt.Alignment = Alignment.MiddleLeft;
         }
 
-        var plt = new ScottPlot.Plot();
         var barPlot = plt.Add.Bars(bars);
 
         plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
@@ -185,8 +204,19 @@ public class FileGenerator
         plt.Axes.Bottom.Max = scores.Max() * 1.1; // 최대값의 110%까지 표시
 
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
-        plt.SavePng(outputPath, 1920, 1080);
+        plt.SavePng(outputPath, 1080, 1920);
         Console.WriteLine($"✅ 차트 생성 완료: {outputPath}");
+    }
+
+    public void GenerateStateSummary(RepoStateSummary summary)
+    {
+        string filePath = Path.Combine(_folderPath, $"{_repoName}_state.txt");
+        using StreamWriter writer = new StreamWriter(filePath);
+        writer.WriteLine($"Merged PR: {summary.MergedPR}");
+        writer.WriteLine($"Unmerged PR: {summary.UnmergedPR}");
+        writer.WriteLine($"Open Issue: {summary.OpenIssue}");
+        writer.WriteLine($"Closed Issue: {summary.ClosedIssue}");
+        Console.WriteLine($"{filePath} 생성됨");
     }
 
 

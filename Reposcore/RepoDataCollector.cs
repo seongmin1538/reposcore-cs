@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DotNetEnv;
+using System.Text.Json;
 
 // GitHub 저장소 데이터를 수집하는 클래스입니다.
 // 저장소의 PR 및 이슈 데이터를 분석하고, 사용자별 활동 정보를 정리합니다.
@@ -26,6 +27,9 @@ public class RepoDataCollector
     private static readonly string[] FeatureLabels = { "bug", "enhancement" };
     private static readonly string[] DocsLabels = { "documentation" };
     private static readonly string TypoLabel = "typo";
+
+    public RepoStateSummary StateSummary { get; private set; } =
+        new RepoStateSummary(0, 0, 0, 0);
 
     // 생성자에는 저장소 하나의 정보를 넘김
     public RepoDataCollector(string owner, string repo)
@@ -91,14 +95,53 @@ public class RepoDataCollector
         }
     }
 
-    // 수집용 mutable 클래스 (Collect 메소드에서만 사용)
-  
+    // 캐시 파일 경로를 반환하는 메서드
+    private string GetCacheFilePath()
+    {
+        return Path.Combine("cache", $"{_owner}_{_repo}.json");
+    }
+
+    // 캐시에서 데이터를 로드하는 메서드
+    private Dictionary<string, UserActivity>? LoadFromCache()
+    {
+        var cachePath = GetCacheFilePath();
+        if (!File.Exists(cachePath))
+            return null;
+
+        try
+        {
+            var json = File.ReadAllText(cachePath);
+            return JsonSerializer.Deserialize<Dictionary<string, UserActivity>>(json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❗ 캐시 파일 로드 중 오류 발생: {ex.Message}");
+            return null;
+        }
+    }
+
+    // 데이터를 캐시에 저장하는 메서드
+    private void SaveToCache(Dictionary<string, UserActivity> data)
+    {
+        var cachePath = GetCacheFilePath();
+        try
+        {
+            var json = JsonSerializer.Serialize(data);
+            File.WriteAllText(cachePath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❗ 캐시 파일 저장 중 오류 발생: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// 지정된 저장소의 이슈 및 PR 데이터를 수집하여 사용자별 활동 내역을 반환합니다.
     /// </summary>
     /// <param name="returnDummyData">더미 데이터를 사용할지 여부 (테스트 용도)</param>
     /// <param name="since">이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD 형식)</param>
     /// <param name="until">이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD 형식)</param>
+    /// <param name="useCache">캐시를 사용할지 여부</param>
     /// <returns>
     /// 사용자 로그인명을 키로 하고 활동 내역(UserActivity)을 값으로 갖는 Dictionary
     /// </returns>
@@ -107,11 +150,22 @@ public class RepoDataCollector
     /// <exception cref="NotFoundException">저장소를 찾을 수 없을 경우</exception>
     /// <exception cref="Exception">기타 알 수 없는 예외 발생 시</exception>
     // Collect 메소드
-    public Dictionary<string, UserActivity> Collect(bool returnDummyData = false, string? since = null, string? until = null)
+    public Dictionary<string, UserActivity> Collect(bool returnDummyData = false, string? since = null, string? until = null, bool useCache = false)
     {
         if (returnDummyData)
         {
             return DummyData.repo1Activities;
+        }
+
+        // 캐시 사용 옵션이 활성화된 경우 캐시에서 데이터 로드 시도
+        if (useCache)
+        {
+            var cachedData = LoadFromCache();
+            if (cachedData != null)
+            {
+                Console.WriteLine($"✅ 캐시에서 데이터를 로드했습니다: {_owner}/{_repo}");
+                return cachedData;
+            }
         }
 
         try
@@ -148,6 +202,10 @@ public class RepoDataCollector
 
             // 수집용 mutable 객체. 모든 데이터 수집 후 레코드로 변환하여 반환
             var mutableActivities = new Dictionary<string, UserActivity>();
+            int mergedPr = 0;
+            int unmergedPr = 0;
+            int openIssue = 0;
+            int closedIssue = 0;
 
             // allIssuesAndPRs의 데이터를 유저,라벨별로 분류
             foreach (var item in allIssuesAndPRs)
@@ -168,8 +226,9 @@ public class RepoDataCollector
 
                 if (item.PullRequest != null) // PR일 경우
                 {
-                    if (item.PullRequest.Merged) // 병합된 PR만 집계
+                    if (item.PullRequest.Merged)
                     {
+                        mergedPr++;
                         if (FeatureLabels.Contains(labelName))
                             activity.PR_fb++;
                         else if (DocsLabels.Contains(labelName))
@@ -177,17 +236,31 @@ public class RepoDataCollector
                         else if (labelName == TypoLabel)
                             activity.PR_typo++;
                     }
+                    else
+                    {
+                        unmergedPr++;
+                    }
                 }
                 else
                 {
-                    if (item.State.Value.ToString() == "Open" ||
-                        item.StateReason.ToString() == "completed") // 열려있거나 정상적으로 닫힌 이슈들만 집계
+                    if (item.State.Value.ToString() == "Open")
                     {
+                        openIssue++;
                         if (FeatureLabels.Contains(labelName))
                             activity.IS_fb++;
                         else if (DocsLabels.Contains(labelName))
                             activity.IS_doc++;
-
+                    }
+                    else if (item.State.Value.ToString() == "Closed")
+                    {
+                        closedIssue++;
+                        if (item.StateReason.ToString() == "completed")
+                        {
+                            if (FeatureLabels.Contains(labelName))
+                                activity.IS_fb++;
+                            else if (DocsLabels.Contains(labelName))
+                                activity.IS_doc++;
+                        }
                     }
                 }
             }
@@ -204,6 +277,11 @@ public class RepoDataCollector
                     IS_doc: value.IS_doc
                 );
             }
+
+            StateSummary = new RepoStateSummary(mergedPr, unmergedPr, openIssue, closedIssue);
+
+            // 데이터 수집 성공 시 캐시에 저장
+            SaveToCache(userActivities);
 
             return userActivities;
         }
