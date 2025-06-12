@@ -27,6 +27,13 @@ public record UserActivity(
         int total
     );
 
+public record RepoStateSummary(
+    int MergedPR,
+    int UnmergedPR,
+    int OpenIssue,
+    int ClosedIssue
+);
+
 // 1번 단계를 책임지는 Repscore/RepoDataCollector.cs의 클래스의 객체 하나가
 // 모아오는 데이타가 바로 repo1Activities 같은 것이다.
 public static class DummyData
