@@ -178,8 +178,22 @@ public class FileGenerator
             double textX = scores[i] + scores.Max() * 0.01;
             double textY = positions[i];
 
-            var txt = plt.Add.Text($"{scores[i]:F1}", textX, textY);
-            txt.Alignment = Alignment.MiddleLeft;
+            // 사용자 이름 추출 (labels와 rankList는 같은 순서)
+            var userLabel = labels[i];
+            // userLabel은 "user (1st)" 형태이므로, rankList에서 사용자 이름을 가져옴
+            var userName = rankList.OrderBy(x => x.Score).ElementAt(i).User;
+            if (_scores.TryGetValue(userName, out var userScore))
+            {
+                string detailText = $"{userScore.total} (PR_fb {userScore.PR_fb} / PR_doc {userScore.PR_doc} / PR_typo {userScore.PR_typo} / IS_fb {userScore.IS_fb} / IS_doc {userScore.IS_doc})";
+                var txt = plt.Add.Text(detailText, textX, textY);
+                txt.Alignment = Alignment.MiddleLeft;
+            }
+            else
+            {
+                // 혹시라도 매칭이 안 될 경우 기존 총점만 표시
+                var txt = plt.Add.Text($"{scores[i]:F1}", textX, textY);
+                txt.Alignment = Alignment.MiddleLeft;
+            }
         }
 
         var barPlot = plt.Add.Bars(bars);
@@ -191,7 +205,7 @@ public class FileGenerator
 
         // x축 범위 설정
         plt.Axes.Bottom.Min = 0;
-        plt.Axes.Bottom.Max = scores.Max() * 1.1; // 최대값의 110%까지 표시
+        plt.Axes.Bottom.Max = scores.Max() * 2; 
 
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
         plt.SavePng(outputPath, 1080, 1920);
