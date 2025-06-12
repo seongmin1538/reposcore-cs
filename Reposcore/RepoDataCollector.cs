@@ -141,6 +141,12 @@ public class RepoDataCollector
                 allIssuesAndPRs = allIssuesAndPRs.Where(issue => issue.CreatedAt <= untilDate).ToList();
             }
 
+            // 반려 처리할 라벨 목록
+            var rejectionLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "wontfix", "invalid", "duplicate"
+            };
+
             // 수집용 mutable 객체. 모든 데이터 수집 후 레코드로 변환하여 반환
             var mutableActivities = new Dictionary<string, UserActivity>();
 
@@ -148,6 +154,10 @@ public class RepoDataCollector
             foreach (var item in allIssuesAndPRs)
             {
                 if (item.User?.Login == null) continue;
+
+                 // 반려된 이슈/PR은 점수 집계에서 제외
+                if (item.Labels.Any(l => rejectionLabels.Contains(l.Name)))
+                    continue;
 
                 var username = item.User.Login;
 
