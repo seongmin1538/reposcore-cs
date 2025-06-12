@@ -205,7 +205,7 @@ public class FileGenerator
 
         // x축 범위 설정
         plt.Axes.Bottom.Min = 0;
-        plt.Axes.Bottom.Max = scores.Max() * 2; // 최대값의 110%까지 표시
+        plt.Axes.Bottom.Max = scores.Max() * 2; 
 
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
         plt.SavePng(outputPath, 1080, 1920);
