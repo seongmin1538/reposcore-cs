@@ -63,6 +63,13 @@ public class FileGenerator
         // CSV 헤더
         writer.WriteLine("User,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
 
+        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        var totals = _scores.Values.Select(s => s.total).ToList();
+        double avg = totals.Count > 0 ? totals.Average() : 0.0;
+        double max = totals.Count > 0 ? totals.Max() : 0.0;
+        double min = totals.Count > 0 ? totals.Min() : 0.0;
+        writer.WriteLine($"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}");
+
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
@@ -108,9 +115,21 @@ public class FileGenerator
         
         // 점수 기준 주석과 테이블 같이 출력
         var tableText = table.ToMinimalString();
+
+        // 생성 정보 로그 계산
+        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        var totals = _scores.Values.Select(s => s.total).ToList();
+        double avg = totals.Count > 0 ? totals.Average() : 0.0;
+        double max = totals.Count > 0 ? totals.Max() : 0.0;
+        double min = totals.Count > 0 ? totals.Min() : 0.0;
+        string metaLine = $"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}";
+
         var content = "# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1"
                     + Environment.NewLine
+                    + metaLine
+                    + Environment.NewLine
                     + tableText;
+
         File.WriteAllText(filePath, content);
         Console.WriteLine($"{filePath} 생성됨");
     }
@@ -198,8 +217,14 @@ public class FileGenerator
 
         var barPlot = plt.Add.Bars(bars);
 
+        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        double avg = scores.Average();
+        double max = scores.Max();
+        double min = scores.Min();
+
+        string chartTitle = $"Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}";
         plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
-        plt.Title($"Scores - {_repoName}");
+        plt.Title($"Scores - {_repoName}" + "\n" + chartTitle);
         plt.XLabel("Total Score");
         plt.YLabel("User");
 
