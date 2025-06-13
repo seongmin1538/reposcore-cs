@@ -205,7 +205,29 @@ public class FileGenerator
 
         // x축 범위 설정
         plt.Axes.Bottom.Min = 0;
-        plt.Axes.Bottom.Max = scores.Max() * 2; 
+        plt.Axes.Bottom.Max = scores.Max() * 2.5; 
+
+        // 통계 정보 추가
+        double maxScore = scores.Max();
+        double minScore = scores.Min();
+        double avgScore = scores.Average();
+
+        // 제목 근처에 통계 정보 표시
+        double xRight = scores.Max() * 2.4; // x축 최대값의 90% 위치
+        double yTop = positions[^3] + spacing * 2; // 마지막 막대 위에 표시
+        double ySpacing = spacing * 0.8; // 텍스트 간격
+
+        var maxText = plt.Add.Text($"max: {maxScore:F1}", xRight, yTop);
+        maxText.Alignment = Alignment.UpperRight;
+        maxText.Color = Colors.DarkGreen;
+
+        var avgText = plt.Add.Text($"avg: {avgScore:F1}", xRight, yTop - ySpacing);
+        avgText.Alignment = Alignment.UpperRight;
+        avgText.Color = Colors.DarkBlue;
+
+        var minText = plt.Add.Text($"min: {minScore:F1}", xRight, yTop - ySpacing * 2);
+        minText.Alignment = Alignment.UpperRight;
+        minText.Color = Colors.DarkRed;
 
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
         plt.SavePng(outputPath, 1080, 1920);
