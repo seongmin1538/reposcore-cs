@@ -81,7 +81,6 @@ CoconaApp.Run((
         PrintHelper.PrintWarning("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
     }
 
-    var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
     var failedRepos = new List<string>();
 
     RepoDataCollector.CreateClient(token);
@@ -133,10 +132,6 @@ CoconaApp.Run((
 
         try
         {
-            Dictionary<string, int> labelCounts = new() {
-                { "bug", 0 }, { "documentation", 0 }, { "typo", 0 }
-            };
-
             var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
             var finalScores = idToNameMap != null
                 ? rawScores.ToDictionary(
@@ -174,7 +169,7 @@ CoconaApp.Run((
             if (formats.Contains("csv")) generator.GenerateCsv();
             if (formats.Contains("text")) generator.GenerateTable();
             if (formats.Contains("chart")) generator.GenerateChart();
-            if (formats.Contains("html")) PrintHelper.PrintWarning("html 파일 생성이 아직 구현되지 않았습니다.");
+            if (formats.Contains("html")) generator.GenerateHtml();
             if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
         }
         catch (Exception ex)
