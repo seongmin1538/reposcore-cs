@@ -72,21 +72,36 @@ public class RepoDataCollector
             try
             {
                 Console.WriteLine(".env의 토큰으로 인증을 진행합니다.");
-                Env.Load();
+
+                Env.Load(); // .env 로드
+
                 token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
 
-                    if (string.IsNullOrEmpty(token))
-                    {
-                        Console.WriteLine("❗ .env 파일에는 GITHUB_TOKEN이 포함되어 있지 않습니다.");
-                    }
-                    else
-                    {
-                        _client.Credentials = new Credentials(token);
-                    }
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("❗ .env 파일에는 GITHUB_TOKEN이 포함되어 있지 않습니다.");
+                }
+                else
+                {
+                    _client.Credentials = new Credentials(token);
+                    Console.WriteLine("✅ GITHUB_TOKEN을 이용해 인증 정보를 설정했습니다.");
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine("❗ .env 파일이 존재하지 않습니다. 가이드에 따라 .env 파일을 생성해 주세요.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("❗ .env 파일에 접근할 권한이 없습니다.");
+            }
+            catch (IOException ioEx)
+            {
+                Console.WriteLine($"❗ .env 파일 읽기 중 입출력 오류가 발생했습니다: {ioEx.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❗ .env 파일 로딩 중 오류가 발생했습니다: {ex.Message}");
+                Console.WriteLine($"❗ .env 로딩 중 예기치 못한 오류가 발생했습니다: {ex.Message}");
             }
         }
         else
