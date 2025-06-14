@@ -134,10 +134,6 @@ CoconaApp.Run((
 
         try
         {
-            Dictionary<string, int> labelCounts = new() {
-                { "bug", 0 }, { "documentation", 0 }, { "typo", 0 }
-            };
-
             var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
             var finalScores = idToNameMap != null
                 ? rawScores.ToDictionary(
@@ -209,7 +205,7 @@ CoconaApp.Run((
             if (formats.Contains("csv")) generator.GenerateCsv();
             if (formats.Contains("text")) generator.GenerateTable();
             if (formats.Contains("chart")) generator.GenerateChart();
-            if (formats.Contains("html")) Console.WriteLine("html 파일 생성이 아직 구현되지 않았습니다.");
+            if (formats.Contains("html")) generator.GenerateHtml();
             if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
         }
         catch (Exception ex)
@@ -241,7 +237,6 @@ CoconaApp.Run((
             Console.WriteLine($"{repoName,-30} {counts["bug"],5} {counts["documentation"],5} {counts["typo"],5}");
         }
     }
-
     if (failedRepos.Count > 0)
     {
         Console.WriteLine("\n❌ 처리되지 않은 저장소 목록:");
