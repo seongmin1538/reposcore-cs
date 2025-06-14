@@ -189,19 +189,6 @@ CoconaApp.Run((
         totalGen.GenerateChart();
     }
 
-    if (summaries.Count > 0)
-    {
-        PrintHelper.PrintHeader("\n📊 전체 저장소 요약 통계");
-        Console.WriteLine("----------------------------------------------------");
-        Console.WriteLine($"{"Repo",-30} {"B/F",5} {"Doc",5} {"typo",5}");
-        Console.WriteLine("----------------------------------------------------");
-
-        foreach (var (repoName, counts) in summaries)
-        {
-            Console.WriteLine($"{repoName,-30} {counts["bug"],5} {counts["documentation"],5} {counts["typo"],5}");
-        }
-    }
-
     if (failedRepos.Count > 0)
     {
         PrintHelper.PrintError("\n❌ 처리되지 않은 저장소 목록:");
