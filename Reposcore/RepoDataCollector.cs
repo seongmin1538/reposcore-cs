@@ -166,11 +166,11 @@ public class RepoDataCollector
             }
         }
 
-        // --- Retry + Backoff 로직 시작 ---
+        // --- Retry + Backoff 로직 추가 ---
         int maxRetries = 3;
         int[] backoffSeconds = { 1, 2, 4 };
 
-        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        for (int attempt = 0; attempt < maxRetries; attempt++)
         {
             try
             {
@@ -250,18 +250,18 @@ public class RepoDataCollector
                 SaveToCache(userActivities);
                 return userActivities;
             }
-            catch (Exception ex) when (attempt < maxRetries)
+            catch (Exception ex)
             {
                 PrintHelper.PrintWarning($"⚠️ API 요청 실패, 재시도 시도 ({attempt + 1}/{maxRetries}) - {ex.Message}");
+
+                if (attempt == maxRetries - 1)
+                    throw;
+
                 System.Threading.Thread.Sleep(backoffSeconds[attempt] * 1000);
-            }
-            catch
-            {
-                throw;
             }
         }
 
-        // 모든 재시도 실패 시 마지막으로 예외 발생
-        throw new Exception($"API 요청이 {maxRetries + 1}회 모두 실패했습니다: {_owner}/{_repo}");
+        // 정상 실행 도달 불가 (논리상)
+        throw new Exception("재시도 실패");
     }
 }
