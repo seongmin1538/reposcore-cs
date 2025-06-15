@@ -133,32 +133,9 @@ CoconaApp.Run((
 
         try
         {
-            var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
-            var finalScores = idToNameMap != null
-                ? rawScores.ToDictionary(
-                    kvp => idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
-                    kvp => kvp.Value,
-                    StringComparer.OrdinalIgnoreCase)
-                : rawScores;
-
-            // 🆕 total score 누적
-            foreach (var (user, score) in finalScores)
-            {
-                if (!totalScores.ContainsKey(user))
-                    totalScores[user] = score;
-                else
-                {
-                    var prev = totalScores[user];
-                    totalScores[user] = new UserScore(
-                        prev.PR_fb + score.PR_fb,
-                        prev.PR_doc + score.PR_doc,
-                        prev.PR_typo + score.PR_typo,
-                        prev.IS_fb + score.IS_fb,
-                        prev.IS_doc + score.IS_doc,
-                        prev.total + score.total
-                    );
-                }
-            }
+            var analyzer = new ScoreAnalyzer(userActivities, idToNameMap);
+            var scores = analyzer.Analyze();
+            totalScores = analyzer.TotalAnalyze(scores);
 
             if (string.IsNullOrEmpty(singleUser))
             {
@@ -167,7 +144,7 @@ CoconaApp.Run((
                     : checkFormat(format);
 
                 string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
-                var generator = new FileGenerator(finalScores, repo, outputDir);
+                var generator = new FileGenerator(scores, repo, outputDir);
 
                 if (formats.Contains("csv")) generator.GenerateCsv();
                 if (formats.Contains("text")) generator.GenerateTable();
