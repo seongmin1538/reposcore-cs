@@ -152,7 +152,7 @@ CoconaApp.Run((
                 if (formats.Contains("csv")) generator.GenerateCsv();
                 if (formats.Contains("text")) generator.GenerateTable();
                 if (formats.Contains("chart")) generator.GenerateChart();
-                if (formats.Contains("html")) generator.GenerateHtml();
+                if (formats.Contains("html") && repoIndex == totalRepos) generator.GenerateHtml();
                 if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
             }
         }
@@ -170,6 +170,10 @@ CoconaApp.Run((
         string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
         var totalGen = new FileGenerator(totalScores, "total", outputDir);
         totalGen.GenerateChart();
+        if (format == null || format.Length == 0 || checkFormat(format).Contains("html"))
+        {
+            totalGen.GenerateHtml();  // ✅ 마지막에 단 한 번만 HTML 출력
+        }
     }
     // --user 옵션이 지정된 경우, 해당 사용자의 점수와 순위만 출력
     else if (!string.IsNullOrEmpty(singleUser) && totalScores.Count > 0)
