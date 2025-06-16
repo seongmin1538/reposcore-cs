@@ -43,7 +43,7 @@ public class FileGenerator
         get
         {
             return _scores.Sum(pair => pair.Value.PR_doc + pair.Value.PR_fb + pair.Value.PR_typo);
-        }        
+        }
     }
 
     double sumOfIs
@@ -57,13 +57,13 @@ public class FileGenerator
         string filePath = Path.Combine(_folderPath, $"{_repoName}.csv");
         using StreamWriter writer = new StreamWriter(filePath);
 
-        
+
         // 파일에 "# 점수 계산 기준…" 을 쓰면, 이 줄이 CSV 첫 줄로 나옵니다.
         writer.WriteLine("# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1");
         // CSV 헤더
         writer.WriteLine("User,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
 
-        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        string now = GetKoreanTimeString();
         var totals = _scores.Values.Select(s => s.total).ToList();
         double avg = totals.Count > 0 ? totals.Average() : 0.0;
         double max = totals.Count > 0 ? totals.Max() : 0.0;
@@ -74,7 +74,7 @@ public class FileGenerator
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
             double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
-    double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
+            double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
             string line =
                 $"{id},{scores.PR_fb},{scores.PR_doc},{scores.PR_typo},{scores.IS_fb},{scores.IS_doc},{prRate:F1},{isRate:F1},{scores.total}";
             writer.WriteLine(line);
@@ -112,12 +112,12 @@ public class FileGenerator
                 scores.total.ToString().PadLeft(colWidths[8])
             );
         }
-        
+
         // 점수 기준 주석과 테이블 같이 출력
         var tableText = table.ToMinimalString();
 
         // 생성 정보 로그 계산
-        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        string now = GetKoreanTimeString();
         var totals = _scores.Values.Select(s => s.total).ToList();
         double avg = totals.Count > 0 ? totals.Average() : 0.0;
         double max = totals.Count > 0 ? totals.Max() : 0.0;
@@ -173,7 +173,7 @@ public class FileGenerator
 
         string[] names = labels.ToArray();
         double[] scores = values.ToArray();
-        
+
         // ✅ 간격 조절된 Position
         double spacing = 10; // 막대 간격
         double[] positions = Enumerable.Range(0, names.Length)
@@ -217,7 +217,7 @@ public class FileGenerator
 
         var barPlot = plt.Add.Bars(bars);
 
-        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        string now = GetKoreanTimeString();
         double avg = scores.Average();
         double max = scores.Max();
         double min = scores.Min();
@@ -230,7 +230,7 @@ public class FileGenerator
 
         // x축 범위 설정
         plt.Axes.Bottom.Min = 0;
-        plt.Axes.Bottom.Max = scores.Max() * 2.5; 
+        plt.Axes.Bottom.Max = scores.Max() * 2.5;
 
         // 통계 정보 추가
         double maxScore = scores.Max();
@@ -479,5 +479,12 @@ public class FileGenerator
         writer.WriteLine("</html>");
 
         Console.WriteLine($"✅ HTML 보고서 생성 완료: {filePath}");
+    }
+
+    private static string GetKoreanTimeString()
+    {
+        TimeZoneInfo kstZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Seoul");
+        DateTime nowKST = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, kstZone);
+        return nowKST.ToString("yyyy-MM-dd HH:mm");
     }
 }
