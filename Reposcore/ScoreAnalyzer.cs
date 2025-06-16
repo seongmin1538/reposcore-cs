@@ -5,9 +5,54 @@ public class ScoreAnalyzer
     public const int P_T = 1;
     public const int I_FB = 2;
     public const int I_D = 1;
+    private readonly Dictionary<string, UserActivity> _userActivities;
+    private readonly Dictionary<string, string>? _idToNameMap;
+    
+    public ScoreAnalyzer(Dictionary<string, UserActivity> userActivities, Dictionary<string, string>? idToNameMap)
+    {
+        _userActivities = userActivities;
+        _idToNameMap = idToNameMap;
+    }
 
+    // total scores 누적
+    public Dictionary<string, UserScore> TotalAnalyze(Dictionary<string, UserScore> scores)
+    {
+        var totalScores = new Dictionary<string, UserScore>();
+        // 🆕 total score 누적
+        foreach (var (user, score) in scores)
+        {
+            if (!totalScores.ContainsKey(user))
+                totalScores[user] = score;
+            else
+            {
+                var prev = totalScores[user];
+                totalScores[user] = new UserScore(
+                    prev.PR_fb + score.PR_fb,
+                    prev.PR_doc + score.PR_doc,
+                    prev.PR_typo + score.PR_typo,
+                    prev.IS_fb + score.IS_fb,
+                    prev.IS_doc + score.IS_doc,
+                    prev.total + score.total
+                );
+            }
+        }
+        return totalScores;
+    }
 
-    public static UserScore FromActivity(UserActivity act)
+    public Dictionary<string, UserScore> Analyze()
+    {
+        var rawScores = _userActivities.ToDictionary(pair => pair.Key, pair => FromActivity(pair.Value));
+        var finalScores = _idToNameMap != null
+                ? rawScores.ToDictionary(
+                    kvp => _idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
+                    kvp => kvp.Value,
+                    StringComparer.OrdinalIgnoreCase)
+                : rawScores;
+
+        return finalScores;
+    }
+
+    private static UserScore FromActivity(UserActivity act)
     {
         var (p_fb, p_d, p_t, i_fb, i_d) = act;
 

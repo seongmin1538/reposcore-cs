@@ -11,6 +11,7 @@ CoconaApp.Run((
     [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")", ValueName = "Output format")] string[]? format,
     [Option('t', Description = "GitHub 액세스 토큰 입력", ValueName = "Github token")] string? token,
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
+    [Option("user", Description = "특정 사용자 한 명의 점수와 순위만 출력합니다.", ValueName = "Username")] string? singleUser,
     [Option("since", Description = "이 날짜 이후의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "Start date")] string? since,
     [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
     [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
@@ -50,7 +51,7 @@ CoconaApp.Run((
             }
             else
             {
-                Console.WriteLine("올바르지 못한 포멧입니다.");
+                PrintHelper.PrintError("올바르지 못한 포멧입니다.");
                 return;
             }
             if (idToNameMap == null || idToNameMap.Count == 0)
@@ -58,7 +59,7 @@ CoconaApp.Run((
         }
         catch
         {
-            Console.WriteLine("올바르지 못한 포멧입니다.");
+            PrintHelper.PrintError("올바르지 못한 포멧입니다.");
             return;
         }
     }
@@ -69,7 +70,7 @@ CoconaApp.Run((
     if (string.IsNullOrWhiteSpace(output))
     {
         // 실제 디폴트 값은 코드에서 "output"으로 설정되어 있음
-        Console.WriteLine("출력 디렉토리가 지정되지 않아 기본 경로 'output/'이 사용됩니다.");
+        PrintHelper.PrintWarning("출력 디렉토리가 지정되지 않아 기본 경로 'output/'이 사용됩니다.");
     }
 
     // ───────────────────────────────────────────────────────
@@ -78,7 +79,7 @@ CoconaApp.Run((
     if (format == null || format.Length == 0)
     {
         // 여기서 기본값 배열은 {"text", "csv", "chart", "html"}으로 설정됨
-        Console.WriteLine("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
+        PrintHelper.PrintWarning("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
     }
 
     var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
@@ -116,7 +117,7 @@ CoconaApp.Run((
             userActivities = collector.Collect(since: since, until: until, useCache: useCache);
             if (progress)
             {
-                Console.WriteLine(" OK");
+                PrintHelper.PrintSuccess(" OK");
             }
         }
         catch (Exception ex)
@@ -125,7 +126,7 @@ CoconaApp.Run((
             {
                 Console.WriteLine(" 실패");
             }
-            Console.WriteLine($"! 오류 발생: {ex.Message}");
+            PrintHelper.PrintError($"! 오류 발생: {ex.Message}");
             continue;
         }
 
@@ -134,36 +135,15 @@ CoconaApp.Run((
 
         try
         {
-            var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
-            var finalScores = idToNameMap != null
-                ? rawScores.ToDictionary(
-                    kvp => idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
-                    kvp => kvp.Value,
-                    StringComparer.OrdinalIgnoreCase)
-                : rawScores;
+            var analyzer = new ScoreAnalyzer(userActivities, idToNameMap);
+            var scores = analyzer.Analyze();
+            totalScores = analyzer.TotalAnalyze(scores);
 
-            // 🆕 total score 누적
-            foreach (var (user, score) in finalScores)
+            if (string.IsNullOrEmpty(singleUser))
             {
-                if (!totalScores.ContainsKey(user))
-                    totalScores[user] = score;
-                else
-                {
-                    var prev = totalScores[user];
-                    totalScores[user] = new UserScore(
-                        prev.PR_fb + score.PR_fb,
-                        prev.PR_doc + score.PR_doc,
-                        prev.PR_typo + score.PR_typo,
-                        prev.IS_fb + score.IS_fb,
-                        prev.IS_doc + score.IS_doc,
-                        prev.total + score.total
-                    );
-                }
-            }
-
-            List<string> formats = (format == null || format.Length == 0)
-                ? new List<string> { "text", "csv", "chart", "html" }
-                : checkFormat(format);
+                List<string> formats = (format == null || format.Length == 0)
+                    ? new List<string> { "text", "csv", "chart", "html" }
+                    : checkFormat(format);
 
             string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
@@ -210,14 +190,13 @@ CoconaApp.Run((
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"! 오류 발생: {ex.Message}");
+            PrintHelper.PrintError($"! 오류 발생: {ex.Message}");
         }
 
         if (progress)
-            Console.WriteLine($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
+            PrintHelper.PrintInfo($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
     }
-    // 👉 total.txt 출력
-    if (totalScores.Count > 0)
+    if (string.IsNullOrEmpty(singleUser) && totalScores.Count > 0)
     {
         string totalOutputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
         string totalPath = Path.Combine(totalOutputDir, "total.txt");
@@ -231,6 +210,46 @@ CoconaApp.Run((
         Console.WriteLine("----------------------------------------------------");
         Console.WriteLine($"{"Repo",-30} {"B/F",5} {"Doc",5} {"typo",5}");
         Console.WriteLine("----------------------------------------------------");
+    }
+    // --user 옵션이 지정된 경우, 해당 사용자의 점수와 순위만 출력
+    else if (!string.IsNullOrEmpty(singleUser) && totalScores.Count > 0)
+    {
+        var sortedScores = totalScores.OrderByDescending(x => x.Value.total).ToList();
+        int rank = 1;
+        int prevScore = -1;
+        int actualRank = 1;
+
+        UserScore? targetUserScore = null;
+        int targetUserRank = 0;
+
+        foreach (var entry in sortedScores)
+        {
+            if (entry.Value.total != prevScore)
+            {
+                rank = actualRank;
+            }
+
+            if (string.Equals(entry.Key, singleUser, StringComparison.OrdinalIgnoreCase))
+            {
+                targetUserScore = entry.Value;
+                targetUserRank = rank;
+                break;
+            }
+
+            prevScore = entry.Value.total;
+            actualRank++;
+        }
+
+        if (targetUserScore != null)
+        {
+            Console.WriteLine($"{singleUser} 사용자의 총점: {targetUserScore.total}점, 순위: {targetUserRank}위");
+        }
+        else
+        {
+            Console.WriteLine($"'{singleUser}' 사용자를 찾을 수 없습니다.");
+        }
+    }
+
 
         foreach (var (repoName, counts) in summaries)
         {
@@ -239,13 +258,13 @@ CoconaApp.Run((
     }
     if (failedRepos.Count > 0)
     {
-        Console.WriteLine("\n❌ 처리되지 않은 저장소 목록:");
+        PrintHelper.PrintError("\n❌ 처리되지 않은 저장소 목록:");
         foreach (var r in failedRepos) Console.WriteLine($"- {r} (올바른 형식: owner/repo)");
     }
 
     if (progress)
     {
-        Console.WriteLine("완료");
+        PrintHelper.PrintSuccess("완료");
     }
 });
 
@@ -261,7 +280,7 @@ static List<string> checkFormat(string[] format)
         var f = fm.Trim().ToLowerInvariant();
         if (f.IndexOfAny(invalidChars) >= 0)
         {
-            Console.WriteLine($"포맷 '{f}'에는 사용할 수 없는 문자가 포함되어 있습니다.");
+            PrintHelper.PrintError($"포맷 '{f}'에는 사용할 수 없는 문자가 포함되어 있습니다.");
             Environment.Exit(1);
         }
         if (FormatList.Contains(f)) validFormats.Add(f);
@@ -270,7 +289,7 @@ static List<string> checkFormat(string[] format)
 
     if (unValidFormats.Count != 0)
     {
-        Console.WriteLine("유효하지 않은 포맷 존재: " + string.Join(", ", unValidFormats));
+        PrintHelper.PrintError("유효하지 않은 포맷 존재: " + string.Join(", ", unValidFormats));
         Environment.Exit(1);
     }
 
@@ -284,7 +303,7 @@ static (string, string)? TryParseRepoPath(string repoPath)
     var parts = repoPath.Split('/');
     if (parts.Length != 2)
     {
-        Console.WriteLine($"⚠️ 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
+        PrintHelper.PrintError($"⚠️ 저장소 인자 '{repoPath}'는 'owner/repo' 형식이어야 합니다.");
         return null;
     }
     return (parts[0], parts[1]);

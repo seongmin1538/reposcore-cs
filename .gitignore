@@ -58,3 +58,6 @@ reposcore-cs.sln
 
 #env파일
 .env
+
+# 캐시 폴더
+cache/  

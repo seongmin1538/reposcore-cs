@@ -54,15 +54,15 @@ public class RepoDataCollector
             }
             catch (IOException ioEx)
             {
-                Console.WriteLine($"❗ .env 파일 쓰기 중 IO 오류가 발생했습니다: {ioEx.Message}");
+                PrintHelper.PrintError($"❗ .env 파일 쓰기 중 IO 오류가 발생했습니다: {ioEx.Message}");
             }
             catch (UnauthorizedAccessException uaEx)
             {
-                Console.WriteLine($"❗ .env 파일 쓰기 권한이 없습니다: {uaEx.Message}");
+                PrintHelper.PrintError($"❗ .env 파일 쓰기 권한이 없습니다: {uaEx.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❗ .env 파일 쓰기 중 알 수 없는 오류가 발생했습니다: {ex.Message}");
+                PrintHelper.PrintError($"❗ .env 파일 쓰기 중 알 수 없는 오류가 발생했습니다: {ex.Message}");
             }
 
             _client.Credentials = new Credentials(token);
@@ -72,26 +72,41 @@ public class RepoDataCollector
             try
             {
                 Console.WriteLine(".env의 토큰으로 인증을 진행합니다.");
-                Env.Load();
+
+                Env.Load(); // .env 로드
+
                 token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
 
-                    if (string.IsNullOrEmpty(token))
-                    {
-                        Console.WriteLine("❗ .env 파일에는 GITHUB_TOKEN이 포함되어 있지 않습니다.");
-                    }
-                    else
-                    {
-                        _client.Credentials = new Credentials(token);
-                    }
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("❗ .env 파일에는 GITHUB_TOKEN이 포함되어 있지 않습니다.");
+                }
+                else
+                {
+                    _client.Credentials = new Credentials(token);
+                    Console.WriteLine("✅ GITHUB_TOKEN을 이용해 인증 정보를 설정했습니다.");
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine("❗ .env 파일이 존재하지 않습니다. 가이드에 따라 .env 파일을 생성해 주세요.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("❗ .env 파일에 접근할 권한이 없습니다.");
+            }
+            catch (IOException ioEx)
+            {
+                Console.WriteLine($"❗ .env 파일 읽기 중 입출력 오류가 발생했습니다: {ioEx.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❗ .env 파일 로딩 중 오류가 발생했습니다: {ex.Message}");
+                Console.WriteLine($"❗ .env 로딩 중 예기치 못한 오류가 발생했습니다: {ex.Message}");
             }
         }
         else
         {
-            Console.WriteLine("❗ 인증 토큰이 제공되지 않았고 .env 파일도 존재하지 않습니다. 인증이 실패할 수 있습니다.");
+            PrintHelper.PrintError("❗ 인증 토큰이 제공되지 않았고 .env 파일도 존재하지 않습니다. 인증이 실패할 수 있습니다.");
         }
     }
 
@@ -115,7 +130,7 @@ public class RepoDataCollector
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❗ 캐시 파일 로드 중 오류 발생: {ex.Message}");
+            PrintHelper.PrintError($"❗ 캐시 파일 로드 중 오류 발생: {ex.Message}");
             return null;
         }
     }
@@ -131,7 +146,7 @@ public class RepoDataCollector
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❗ 캐시 파일 저장 중 오류 발생: {ex.Message}");
+            PrintHelper.PrintError($"❗ 캐시 파일 저장 중 오류 발생: {ex.Message}");
         }
     }
 
@@ -149,7 +164,6 @@ public class RepoDataCollector
     /// <exception cref="AuthorizationException">인증 실패 시</exception>
     /// <exception cref="NotFoundException">저장소를 찾을 수 없을 경우</exception>
     /// <exception cref="Exception">기타 알 수 없는 예외 발생 시</exception>
-    // Collect 메소드
     public Dictionary<string, UserActivity> Collect(bool returnDummyData = false, string? since = null, string? until = null, bool useCache = false)
     {
         if (returnDummyData)
@@ -157,7 +171,6 @@ public class RepoDataCollector
             return DummyData.repo1Activities;
         }
 
-        // 캐시 사용 옵션이 활성화된 경우 캐시에서 데이터 로드 시도
         if (useCache)
         {
             var cachedData = LoadFromCache();
@@ -168,166 +181,102 @@ public class RepoDataCollector
             }
         }
 
-        try
-        {
-            // Issues수집 (RP포함)
-            var request = new RepositoryIssueRequest
-            {
-                State = ItemStateFilter.All
-            };
+        // --- Retry + Backoff 로직 추가 ---
+        int maxRetries = 3;
+        int[] backoffSeconds = { 1, 2, 4 };
 
-            if (!string.IsNullOrEmpty(since))
-            {
-                if (DateTime.TryParse(since, out DateTime sinceDate))
-                {
-                    request.Since = sinceDate;
-                }
-                else
-                {
-                    throw new ArgumentException($"잘못된 시작 날짜 형식입니다: {since}. YYYY-MM-DD 형식으로 입력해주세요.");
-                }
-            }
-
-            var allIssuesAndPRs = _client!.Issue.GetAllForRepository(_owner, _repo, request).Result;
-
-            // until 날짜 필터링 적용
-            if (!string.IsNullOrEmpty(until))
-            {
-                if (!DateTime.TryParse(until, out DateTime untilDate))
-                {
-                    throw new ArgumentException($"잘못된 종료 날짜 형식입니다: {until}. YYYY-MM-DD 형식으로 입력해주세요.");
-                }
-                allIssuesAndPRs = allIssuesAndPRs.Where(issue => issue.CreatedAt <= untilDate).ToList();
-            }
-
-            // 반려 처리할 라벨 목록
-            var rejectionLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "wontfix", "invalid", "duplicate"
-            };
-
-            // 수집용 mutable 객체. 모든 데이터 수집 후 레코드로 변환하여 반환
-            var mutableActivities = new Dictionary<string, UserActivity>();
-            int mergedPr = 0;
-            int unmergedPr = 0;
-            int openIssue = 0;
-            int closedIssue = 0;
-
-            // allIssuesAndPRs의 데이터를 유저,라벨별로 분류
-            foreach (var item in allIssuesAndPRs)
-            {
-                if (item.User?.Login == null) continue;
-
-                 // 반려된 이슈/PR은 점수 집계에서 제외
-                if (item.Labels.Any(l => rejectionLabels.Contains(l.Name)))
-                    continue;
-
-                var username = item.User.Login;
-
-                // 처음 기록하는 사용자 초기화
-                if (!mutableActivities.ContainsKey(username))
-                {
-                    mutableActivities[username] = new UserActivity(0,0,0,0,0);
-                }
-
-                var labelName = item.Labels.Any() ? item.Labels[0].Name : null; // 라벨 구분을 위한 labelName
-
-                var activity = mutableActivities[username];
-
-                if (item.PullRequest != null) // PR일 경우
-                {
-                    if (item.PullRequest.Merged)
-                    {
-                        mergedPr++;
-                        if (FeatureLabels.Contains(labelName))
-                            activity.PR_fb++;
-                        else if (DocsLabels.Contains(labelName))
-                            activity.PR_doc++;
-                        else if (labelName == TypoLabel)
-                            activity.PR_typo++;
-                    }
-                    else
-                    {
-                        unmergedPr++;
-                    }
-                }
-                else
-                {
-                    if (item.State.Value.ToString() == "Open")
-                    {
-                        openIssue++;
-                        if (FeatureLabels.Contains(labelName))
-                            activity.IS_fb++;
-                        else if (DocsLabels.Contains(labelName))
-                            activity.IS_doc++;
-                    }
-                    else if (item.State.Value.ToString() == "Closed")
-                    {
-                        closedIssue++;
-                        if (item.StateReason.ToString() == "completed")
-                        {
-                            if (FeatureLabels.Contains(labelName))
-                                activity.IS_fb++;
-                            else if (DocsLabels.Contains(labelName))
-                                activity.IS_doc++;
-                        }
-                    }
-                }
-            }
-
-            // 레코드로 변환
-            var userActivities = new Dictionary<string, UserActivity>();
-            foreach (var (key, value) in mutableActivities)
-            {
-                userActivities[key] = new UserActivity(
-                    PR_fb: value.PR_fb,
-                    PR_doc: value.PR_doc,
-                    PR_typo: value.PR_typo,
-                    IS_fb: value.IS_fb,
-                    IS_doc: value.IS_doc
-                );
-            }
-
-            StateSummary = new RepoStateSummary(mergedPr, unmergedPr, openIssue, closedIssue);
-
-            // 데이터 수집 성공 시 캐시에 저장
-            SaveToCache(userActivities);
-
-            return userActivities;
-        }
-        catch (RateLimitExceededException)
+        for (int attempt = 0; attempt < maxRetries; attempt++)
         {
             try
             {
-                var rateLimits = _client!.RateLimit.GetRateLimits().Result;
-                var coreRateLimit = rateLimits.Rate;
-                var resetTime = coreRateLimit.Reset; // UTC DateTime
-                var secondsUntilReset = (int)(resetTime - DateTimeOffset.UtcNow).TotalSeconds;
+                var request = new RepositoryIssueRequest { State = ItemStateFilter.All };
 
-                Console.WriteLine($"❗[{_owner}/{_repo}] API 호출 한도(Rate Limit)를 초과했습니다. {secondsUntilReset}초 후 재시도 가능합니다 (약 {resetTime.LocalDateTime} 기준).");
+                if (!string.IsNullOrEmpty(since))
+                {
+                    if (DateTime.TryParse(since, out DateTime sinceDate))
+                        request.Since = sinceDate;
+                    else
+                        throw new ArgumentException($"잘못된 시작 날짜 형식입니다: {since}. YYYY-MM-DD 형식으로 입력해주세요.");
+                }
+
+                var allIssuesAndPRs = _client!.Issue.GetAllForRepository(_owner, _repo, request).Result;
+
+                if (!string.IsNullOrEmpty(until))
+                {
+                    if (!DateTime.TryParse(until, out DateTime untilDate))
+                        throw new ArgumentException($"잘못된 종료 날짜 형식입니다: {until}. YYYY-MM-DD 형식으로 입력해주세요.");
+                    allIssuesAndPRs = allIssuesAndPRs.Where(issue => issue.CreatedAt <= untilDate).ToList();
+                }
+
+                var rejectionLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "wontfix", "invalid", "duplicate" };
+                var mutableActivities = new Dictionary<string, UserActivity>();
+                int mergedPr = 0, unmergedPr = 0, openIssue = 0, closedIssue = 0;
+
+                foreach (var item in allIssuesAndPRs)
+                {
+                    if (item.User?.Login == null) continue;
+                    if (item.Labels.Any(l => rejectionLabels.Contains(l.Name))) continue;
+                    var username = item.User.Login;
+
+                    if (!mutableActivities.ContainsKey(username))
+                        mutableActivities[username] = new UserActivity(0,0,0,0,0);
+
+                    var labelName = item.Labels.Any() ? item.Labels[0].Name : null;
+                    var activity = mutableActivities[username];
+
+                    if (item.PullRequest != null)
+                    {
+                        if (item.PullRequest.Merged)
+                        {
+                            mergedPr++;
+                            if (FeatureLabels.Contains(labelName)) activity.PR_fb++;
+                            else if (DocsLabels.Contains(labelName)) activity.PR_doc++;
+                            else if (labelName == TypoLabel) activity.PR_typo++;
+                        }
+                        else unmergedPr++;
+                    }
+                    else
+                    {
+                        if (item.State.Value.ToString() == "Open")
+                        {
+                            openIssue++;
+                            if (FeatureLabels.Contains(labelName)) activity.IS_fb++;
+                            else if (DocsLabels.Contains(labelName)) activity.IS_doc++;
+                        }
+                        else if (item.State.Value.ToString() == "Closed")
+                        {
+                            closedIssue++;
+                            if (item.StateReason.ToString() == "completed")
+                            {
+                                if (FeatureLabels.Contains(labelName)) activity.IS_fb++;
+                                else if (DocsLabels.Contains(labelName)) activity.IS_doc++;
+                            }
+                        }
+                    }
+                }
+
+                var userActivities = new Dictionary<string, UserActivity>();
+                foreach (var (key, value) in mutableActivities)
+                {
+                    userActivities[key] = new UserActivity(value.PR_fb, value.PR_doc, value.PR_typo, value.IS_fb, value.IS_doc);
+                }
+
+                StateSummary = new RepoStateSummary(mergedPr, unmergedPr, openIssue, closedIssue);
+                SaveToCache(userActivities);
+                return userActivities;
             }
-            catch (Exception innerEx)
+            catch (Exception ex)
             {
-                Console.WriteLine($"❗[{_owner}/{_repo}] API 호출 한도 초과, 재시도 시간을 가져오는 데 실패했습니다: {innerEx.Message}");
-            }
+                PrintHelper.PrintWarning($"⚠️ API 요청 실패, 재시도 시도 ({attempt + 1}/{maxRetries}) - {ex.Message}");
 
-            Environment.Exit(1);
+                if (attempt == maxRetries - 1)
+                    throw;
+
+                System.Threading.Thread.Sleep(backoffSeconds[attempt] * 1000);
+            }
         }
-        catch (AuthorizationException)
-        {
-            Console.WriteLine("❗[{_owner}/{_repo}] 인증 실패: 올바른 토큰을 사용했는지 확인하세요.");
-            Environment.Exit(1);
-        }
-        catch (NotFoundException)
-        {
-            Console.WriteLine("❗[{_owner}/{_repo}] 저장소를 찾을 수 없습니다. owner/repo 이름을 확인하세요.");
-            Environment.Exit(1);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❗[{_owner}/{_repo}] 알 수 없는 오류가 발생했습니다: {ex.Message}");
-            Environment.Exit(1);
-        }
-        return null!;
+
+        // 정상 실행 도달 불가 (논리상)
+        throw new Exception("재시도 실패");
     }
 }
