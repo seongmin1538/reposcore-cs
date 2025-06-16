@@ -312,13 +312,13 @@ public class FileGenerator
         writer.WriteLine("        </ul>");
         writer.WriteLine("    </div>");
 
-        // 탭 버튼
+        // 탭 버튼 - Total을 첫 번째로 이동
         writer.WriteLine("    <div class='tab'>");
+        writer.WriteLine("        <button class='tablinks active' onclick=\"openTab(event, 'total')\">Total</button>");
         foreach (var (repoName, _) in _allRepos)
         {
             writer.WriteLine($"        <button class='tablinks' onclick=\"openTab(event, '{repoName}')\">{repoName}</button>");
         }
-        writer.WriteLine("        <button class='tablinks' onclick=\"openTab(event, 'total')\">Total</button>");
         writer.WriteLine("    </div>");
 
         // 각 저장소별 탭 내용
