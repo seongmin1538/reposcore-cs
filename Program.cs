@@ -96,6 +96,9 @@ CoconaApp.Run((
         var parsed = TryParseRepoPath(repoPath);
         if (parsed == null) { failedRepos.Add(repoPath); continue; }
         var (owner, repo) = parsed.Value;
+        
+        RepoDataCollector.ValidateRepositoryExists(owner, repo);
+        
         var collector = new RepoDataCollector(owner, repo);
 
         if (progress)

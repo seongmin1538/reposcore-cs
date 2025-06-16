@@ -110,6 +110,25 @@ public class RepoDataCollector
         }
     }
 
+    public static void ValidateRepositoryExists(string owner, string repo)
+    {
+        try
+        {
+            var repository = _client!.Repository.Get(owner, repo).Result;
+        }
+        catch (AggregateException exception)
+        {
+            foreach (var innerException in exception.InnerExceptions)
+            {
+                if (innerException is not NotFoundException) continue;
+                
+                PrintHelper.PrintError($"❗ 저장소 ‘{owner}/{repo}’를 찾을 수 없습니다.");
+                Environment.Exit(1);
+            }
+        }
+    }
+
+    
     // 캐시 파일 경로를 반환하는 메서드
     private string GetCacheFilePath()
     {
