@@ -328,6 +328,7 @@ public class FileGenerator
             writer.WriteLine("        <table>");
             writer.WriteLine("            <thead>");
             writer.WriteLine("                <tr>");
+            writer.WriteLine("                    <th>순위</th>");
             writer.WriteLine("                    <th>User</th>");
             writer.WriteLine("                    <th>f/b_PR</th>");
             writer.WriteLine("                    <th>doc_PR</th>");
@@ -344,12 +345,25 @@ public class FileGenerator
             double repoSumOfPR = scores.Sum(pair => pair.Value.PR_doc + pair.Value.PR_fb + pair.Value.PR_typo);
             double repoSumOfIs = scores.Sum(pair => pair.Value.IS_doc + pair.Value.IS_fb);
 
+            int currentRank = 1; // 순위
+            double previousTotal = -1; // 이전 점수
+            int position = 0; // 현재 위치
+
             foreach (var (id, score) in scores.OrderByDescending(x => x.Value.total))
             {
+                position++;
+
+                // 이전 점수와 다르면 현재 순위 업데이트
+                if (score.total != previousTotal)
+                {
+                    currentRank = position;
+                }
+
                 double prRate = (repoSumOfPR > 0) ? (score.PR_doc + score.PR_fb + score.PR_typo) / repoSumOfPR * 100 : 0.0;
                 double isRate = (repoSumOfIs > 0) ? (score.IS_doc + score.IS_fb) / repoSumOfIs * 100 : 0.0;
 
                 writer.WriteLine("                <tr>");
+                writer.WriteLine($"                    <td class='rank'>{currentRank}</td>");
                 writer.WriteLine($"                    <td>{id}</td>");
                 writer.WriteLine($"                    <td>{score.PR_fb}</td>");
                 writer.WriteLine($"                    <td>{score.PR_doc}</td>");
@@ -360,6 +374,9 @@ public class FileGenerator
                 writer.WriteLine($"                    <td>{isRate:F1}%</td>");
                 writer.WriteLine($"                    <td class='total'>{score.total}</td>");
                 writer.WriteLine("                </tr>");
+
+                // 이전 점수 업데이트
+                previousTotal = score.total;
             }
 
             writer.WriteLine("            </tbody>");
@@ -394,6 +411,7 @@ public class FileGenerator
         writer.WriteLine("        <table>");
         writer.WriteLine("            <thead>");
         writer.WriteLine("                <tr>");
+        writer.WriteLine("                    <th>순위</th>");
         writer.WriteLine("                    <th>User</th>");
         writer.WriteLine("                    <th>f/b_PR</th>");
         writer.WriteLine("                    <th>doc_PR</th>");
@@ -405,9 +423,22 @@ public class FileGenerator
         writer.WriteLine("            </thead>");
         writer.WriteLine("            <tbody>");
 
+        int totalCurrentRank = 1;
+        double totalPreviousTotal = -1;
+        int totalPosition = 0;
+
         foreach (var (id, score) in totalScores.OrderByDescending(x => x.Value.total))
         {
+            totalPosition++;
+
+            // 이전 점수와 다르면 현재 순위 업데이트
+            if (score.total != totalPreviousTotal)
+            {
+                totalCurrentRank = totalPosition;
+            }
+
             writer.WriteLine("                <tr>");
+            writer.WriteLine($"                    <td class='rank'>{totalCurrentRank}</td>");
             writer.WriteLine($"                    <td>{id}</td>");
             writer.WriteLine($"                    <td>{score.PR_fb}</td>");
             writer.WriteLine($"                    <td>{score.PR_doc}</td>");
@@ -416,6 +447,9 @@ public class FileGenerator
             writer.WriteLine($"                    <td>{score.IS_doc}</td>");
             writer.WriteLine($"                    <td class='total'>{score.total}</td>");
             writer.WriteLine("                </tr>");
+
+            // 이전 점수 업데이트
+            totalPreviousTotal = score.total;
         }
 
         writer.WriteLine("            </tbody>");
