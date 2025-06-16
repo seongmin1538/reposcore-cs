@@ -16,6 +16,7 @@ public class FileGenerator
     private readonly string _repoName;
     private readonly string _folderPath;
     private static List<(string RepoName, Dictionary<string, UserScore> Scores)> _allRepos = new();
+    private int ParticipantCount => _scores.Count; //참여자 수 프로퍼티 추가
 
     public FileGenerator(Dictionary<string, UserScore> repoScores, string repoName, string folderPath)
     {
@@ -68,7 +69,9 @@ public class FileGenerator
         double avg = totals.Count > 0 ? totals.Average() : 0.0;
         double max = totals.Count > 0 ? totals.Max() : 0.0;
         double min = totals.Count > 0 ? totals.Min() : 0.0;
-        writer.WriteLine($"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}");
+        writer.WriteLine($"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}"); 
+        writer.WriteLine($"# 참여자 수: {_scores.Count}명"); //참여자 수 출력 추가가
+
 
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
@@ -123,12 +126,16 @@ public class FileGenerator
         double max = totals.Count > 0 ? totals.Max() : 0.0;
         double min = totals.Count > 0 ? totals.Min() : 0.0;
         string metaLine = $"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}";
+        string participantLine = $"# 참여자 수: {_scores.Count}명"; //참여자 수 출력 추
 
         var content = "# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1"
                     + Environment.NewLine
                     + metaLine
                     + Environment.NewLine
+                    + participantLine //추가
+                    + Environment.NewLine
                     + tableText;
+                    
 
         File.WriteAllText(filePath, content);
         Console.WriteLine($"{filePath} 생성됨");
@@ -325,6 +332,7 @@ public class FileGenerator
         foreach (var (repoName, scores) in _allRepos)
         {
             writer.WriteLine($"    <div id='{repoName}' class='tabcontent'>");
+            writer.WriteLine($"        <p>참여자 수: {scores.Count}명</p>"); //참여자 수 출력 추
             writer.WriteLine("        <table>");
             writer.WriteLine("            <thead>");
             writer.WriteLine("                <tr>");
