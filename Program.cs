@@ -162,7 +162,7 @@ CoconaApp.Run((
             PrintHelper.PrintInfo($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
     }
 
-    if (string.IsNullOrEmpty(singleUser) && totalScores.Count > 0)
+    if (string.IsNullOrEmpty(singleUser) && totalScores.Count > 0 && repos.Length > 1)
     {
         string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
         var totalGen = new FileGenerator(totalScores, "total", outputDir);
