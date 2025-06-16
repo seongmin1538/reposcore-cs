@@ -296,9 +296,11 @@ public class FileGenerator
         writer.WriteLine("        .tab button:hover { background-color: #ddd; }");
         writer.WriteLine("        .tab button.active { background-color: #ccc; }");
         writer.WriteLine("        .tabcontent { display: none; padding: 6px 12px; border: 1px solid #ccc; border-top: none; }");
+        writer.WriteLine("        .timestamp { color: #666; margin: 10px 0; text-align: right; }");
         writer.WriteLine("    </style>");
         writer.WriteLine("</head>");
         writer.WriteLine("<body>");
+        writer.WriteLine($"    <div class='timestamp'>생성 시간: {DateTime.Now:yyyy-MM-dd HH:mm:ss}</div>");
 
         // 점수 계산 기준 정보
         writer.WriteLine("    <div class='score-info'>");
