@@ -227,7 +227,7 @@ public class FileGenerator
         double max = scores.Max();
         double min = scores.Min();
 
-        string chartTitle = $"Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}";
+        string chartTitle = $"Repo: {_repoName}  Date: {now}";
         plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
         plt.Title($"Scores - {_repoName}" + "\n" + chartTitle);
         plt.XLabel("Total Score");
