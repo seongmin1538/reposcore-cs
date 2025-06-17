@@ -117,7 +117,6 @@ public class FileGenerator
  }
 
 
-     
     public void GenerateTable()
     {
         // 출력할 파일 경로
