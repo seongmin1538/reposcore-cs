@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using DotNetEnv;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 // GitHub 저장소 데이터를 수집하는 클래스입니다.
 // 저장소의 PR 및 이슈 데이터를 분석하고, 사용자별 활동 정보를 정리합니다.
@@ -169,6 +170,25 @@ public class RepoDataCollector
         }
     }
 
+    private void PrintRateLimitInfo(string context)
+    {
+        try
+        {
+            var rateLimit = _client!.RateLimit.GetRateLimits().Result;
+            var coreLimit = rateLimit.Resources.Core;
+            var remaining = coreLimit.Remaining;
+            var resetTime = DateTimeOffset.FromUnixTimeSeconds(coreLimit.Reset.ToUnixTimeSeconds()).LocalDateTime;
+            
+            Console.WriteLine($"\n📊 GitHub API 호출 제한 정보 ({context})");
+            Console.WriteLine($"- 남은 호출 횟수: {remaining:N0}회");
+            Console.WriteLine($"- 제한 초기화 시간: {resetTime:yyyy-MM-dd HH:mm:ss}");
+        }
+        catch (Exception ex)
+        {
+            PrintHelper.PrintWarning($"⚠️ API 호출 제한 정보를 가져오는데 실패했습니다: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// 지정된 저장소의 이슈 및 PR 데이터를 수집하여 사용자별 활동 내역을 반환합니다.
     /// </summary>
@@ -282,6 +302,8 @@ public class RepoDataCollector
 
                 StateSummary = new RepoStateSummary(mergedPr, unmergedPr, openIssue, closedIssue);
                 SaveToCache(userActivities);
+                
+                PrintRateLimitInfo("분석 완료");
                 return userActivities;
             }
             catch (Exception ex)
