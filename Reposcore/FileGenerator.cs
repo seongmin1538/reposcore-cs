@@ -8,6 +8,17 @@ using ScottPlot.Plottables;
 using ScottPlot.TickGenerators;
 using Alignment = ScottPlot.Alignment;
 
+public static class ScoreFormatter
+{
+    // CSV 한 줄 포맷
+    public static string ToCsvLine(string id, UserScore s, double prRate, double isRate) =>
+        $"{id},{s.PR_fb},{s.PR_doc},{s.PR_typo},{s.IS_fb},{s.IS_doc},{prRate:F1},{isRate:F1},{s.total}";
+
+    // ConsoleTable용 배열 포맷
+    public static object[] ToTableRow(int rank, string id, UserScore s, double prRate, double isRate) =>
+        new object[] { rank, id, s.PR_fb, s.PR_doc, s.PR_typo, s.IS_fb, s.IS_doc, $"{prRate:F1}", $"{isRate:F1}", s.total };
+}
+
 public class FileGenerator
 {
     private readonly Dictionary<string, UserScore> _scores;
@@ -35,6 +46,36 @@ public class FileGenerator
             Console.WriteLine($"→ 디스크 권한이나 경로 오류를 확인하세요: {ex.Message}");
             Environment.Exit(1);
         }
+    }
+    
+    private void EnsureDir() 
+    {
+        if (!Directory.Exists(_folderPath))
+            Directory.CreateDirectory(_folderPath);
+    }
+
+    private string GetPath(string ext) =>
+        Path.Combine(_folderPath, $"{_repoName}{ext}");
+
+    // ② 통계 계산
+    private (double avg, double max, double min) CalcStats() 
+    {
+        var list = _scores.Values.Select(s => s.total).ToList();
+        double avg = list.Any() ? list.Average() : 0;
+        double max = list.Any() ? list.Max()     : 0;
+        double min = list.Any() ? list.Min()     : 0;
+        return (avg, max, min);
+    }
+
+    // ③ 템플릿 메서드: 공통 생성 로직
+    private void GenerateOutput(string ext, string header, Action<TextWriter> body)
+    {
+        EnsureDir();
+        string path = GetPath(ext);
+        using var writer = new StreamWriter(path);
+        writer.WriteLine(header);
+        body(writer);
+        Console.WriteLine($"{path} 생성됨");
     }
 
     double sumOfPR
