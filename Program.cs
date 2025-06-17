@@ -116,6 +116,8 @@ CoconaApp.Run((
                 Console.Out.Flush();
             }
             userActivities = collector.Collect(since: since, until: until, useCache: useCache);
+            var excludeIds = new HashSet<string> { "kyagrd", "kyahnu" };
+            userActivities = userActivities.Where(kv => !excludeIds.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
             if (progress)
             {
                 PrintHelper.PrintSuccess(" OK");
