@@ -89,29 +89,42 @@ public class FileGenerator
         string filePath = Path.Combine(_folderPath, $"{_repoName}1.txt");
 
         // 테이블 생성
-        var headers = "UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
+        var headers = "Rank,UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
 
         // 각 칸의 너비 계산 (오른쪽 정렬을 위해 사용)
         int[] colWidths = headers.Select(h => h.Length).ToArray();
 
         var table = new ConsoleTable(headers);
 
+        var sortedScores = _scores.OrderByDescending(x => x.Value.total).ToList();
+        int currentRank = 1;
+        double? previousScore = null;
+        int count = 1;
+
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
+            if (previousScore != null && scores.total != previousScore)
+            {
+            currentRank = count;
+            }
             double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
             double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
             table.AddRow(
-                id.PadRight(colWidths[0]), // 글자는 왼쪽 정렬                   
-                scores.PR_fb.ToString().PadLeft(colWidths[1]), // 숫자는 오른쪽 정렬
-                scores.PR_doc.ToString().PadLeft(colWidths[2]),
-                scores.PR_typo.ToString().PadLeft(colWidths[3]),
-                scores.IS_fb.ToString().PadLeft(colWidths[4]),
-                scores.IS_doc.ToString().PadLeft(colWidths[5]),
-                $"{prRate:F1}".PadLeft(colWidths[6]),
-                $"{isRate:F1}".PadLeft(colWidths[7]),
-                scores.total.ToString().PadLeft(colWidths[8])
+                currentRank.ToString().PadLeft(colWidths[0]),
+                id.PadRight(colWidths[1]), // 글자는 왼쪽 정렬                   
+                scores.PR_fb.ToString().PadLeft(colWidths[2]), // 숫자는 오른쪽 정렬
+                scores.PR_doc.ToString().PadLeft(colWidths[3]),
+                scores.PR_typo.ToString().PadLeft(colWidths[4]),
+                scores.IS_fb.ToString().PadLeft(colWidths[5]),
+                scores.IS_doc.ToString().PadLeft(colWidths[6]),
+                $"{prRate:F1}".PadLeft(colWidths[7]),
+                $"{isRate:F1}".PadLeft(colWidths[8]),
+                scores.total.ToString().PadLeft(colWidths[9])
             );
+            
+            previousScore = scores.total;
+            count++;
         }
 
         // 점수 기준 주석과 테이블 같이 출력
