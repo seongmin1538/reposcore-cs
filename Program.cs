@@ -16,8 +16,7 @@ CoconaApp.Run((
     [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
     [Option("progress", Description = "API 호출 진행률을 표시합니다.")] bool progress,
     [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"output\")", ValueName = "Output directory")] string output = "output",
-    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false,
-    [Option("show-state-summary", Description = "PR/Issue 상태 요약을 표시합니다.")] bool showStateSummary = false
+    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false
 ) =>
 {
     // 캐시 디렉토리 생성
@@ -177,7 +176,6 @@ CoconaApp.Run((
                 if (formats.Contains("text")) generator.GenerateTable();
                 if (formats.Contains("chart")) generator.GenerateChart();
                 if (formats.Contains("html") && repoIndex == totalRepos) generator.GenerateHtml();
-                if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
             }
         }
         catch (Exception ex)
