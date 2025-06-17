@@ -105,17 +105,20 @@ public class FileGenerator
      GenerateOutput(".csv", header, writer =>
      {
          // --- 여기 한 줄만 추가하세요 (컬럼명) ---
-         writer.WriteLine("User,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
+         writer.WriteLine("User,GitHubProfile,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
          double sumPr = sumOfPR, sumIs = sumOfIs;
          foreach (var (id, s) in _scores.OrderByDescending(x => x.Value.total))
          {
              double prRate = sumPr > 0 ? (s.PR_doc + s.PR_fb + s.PR_typo) / sumPr * 100 : 0;
              double isRate = sumIs > 0 ? (s.IS_doc + s.IS_fb) / sumIs * 100 : 0;
-             writer.WriteLine(ScoreFormatter.ToCsvLine(id, s, prRate, isRate));
+             string profileUrl = $"https://github.com/{id}";
+             writer.WriteLine(
+               $"{id},{profileUrl},{s.PR_fb},{s.PR_doc},{s.PR_typo}," +
+               $"{s.IS_fb},{s.IS_doc},{prRate:F1},{isRate:F1},{s.total}"
+             );
          }
      });
  }
-
 
     public void GenerateTable()
     {
@@ -255,7 +258,7 @@ public class FileGenerator
             var userName = rankList.OrderBy(x => x.Score).ElementAt(i).User;
             if (_scores.TryGetValue(userName, out var userScore))
             {
-                string detailText = $"{userScore.total} (PR_fb {userScore.PR_fb} / PR_doc {userScore.PR_doc} / PR_typo {userScore.PR_typo} / IS_fb {userScore.IS_fb} / IS_doc {userScore.IS_doc})";
+                string detailText = $"{userScore.total} (P-F: {userScore.PR_fb}, D: {userScore.PR_doc}, T: {userScore.PR_typo} / I-F: {userScore.IS_fb}, D: {userScore.IS_doc})";
                 var txt = plt.Add.Text(detailText, textX, textY);
                 txt.Alignment = Alignment.MiddleLeft;
             }
