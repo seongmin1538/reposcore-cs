@@ -54,7 +54,7 @@ public class FileGenerator
     {
         // 경로 설정
         string filePath = Path.Combine(_folderPath, $"{_repoName}.csv");
-        using StreamWriter writer = new StreamWriter(filePath);
+        var writer = new StreamWriter(filePath);
 
 
         // 파일에 "# 점수 계산 기준…" 을 쓰면, 이 줄이 CSV 첫 줄로 나옵니다.
