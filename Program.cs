@@ -140,7 +140,29 @@ CoconaApp.Run((
         {
             var analyzer = new ScoreAnalyzer(userActivities, idToNameMap);
             var scores = analyzer.Analyze();
-            totalScores = analyzer.TotalAnalyze(scores);
+            var repoTotal = analyzer.TotalAnalyze(scores);
+
+            foreach (var kv in repoTotal)
+            {
+                if (totalScores.ContainsKey(kv.Key))
+                {
+                    var prev = totalScores[kv.Key];
+                    var curr = kv.Value;
+                    // 모든 필드를 합산해서 새 객체 생성
+                    totalScores[kv.Key] = new UserScore(
+                        prev.PR_fb + curr.PR_fb,
+                        prev.PR_doc + curr.PR_doc,
+                        prev.PR_typo + curr.PR_typo,
+                        prev.IS_fb + curr.IS_fb,
+                        prev.IS_doc + curr.IS_doc,
+                        prev.total + curr.total
+                    );
+                }
+                else
+                {
+                    totalScores[kv.Key] = kv.Value;
+                }
+            }
 
             if (string.IsNullOrEmpty(singleUser))
             {
