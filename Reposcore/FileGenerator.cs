@@ -242,15 +242,15 @@ public class FileGenerator
 
         var maxText = plt.Add.Text($"max: {maxScore:F1}", xRight, yTop);
         maxText.Alignment = Alignment.UpperRight;
-        maxText.Color = Colors.DarkGreen;
+        maxText.LabelFontColor = Colors.DarkGreen;
 
         var avgText = plt.Add.Text($"avg: {avgScore:F1}", xRight, yTop - ySpacing);
         avgText.Alignment = Alignment.UpperRight;
-        avgText.Color = Colors.DarkBlue;
+        avgText.LabelFontColor = Colors.DarkBlue;
 
         var minText = plt.Add.Text($"min: {minScore:F1}", xRight, yTop - ySpacing * 2);
         minText.Alignment = Alignment.UpperRight;
-        minText.Color = Colors.DarkRed;
+        minText.LabelFontColor = Colors.DarkRed;
 
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
         plt.SavePng(outputPath, 1080, 1920);
