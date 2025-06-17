@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Drawing;
 using ConsoleTables;
 using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.TickGenerators;
 using Alignment = ScottPlot.Alignment;
-using Color = System.Drawing.Color;
 
 public class FileGenerator
 {
@@ -16,6 +14,7 @@ public class FileGenerator
     private readonly string _repoName;
     private readonly string _folderPath;
     private static List<(string RepoName, Dictionary<string, UserScore> Scores)> _allRepos = new();
+    private int ParticipantCount => _scores.Count; //참여자 수 프로퍼티 추가
 
     public FileGenerator(Dictionary<string, UserScore> repoScores, string repoName, string folderPath)
     {
@@ -43,7 +42,7 @@ public class FileGenerator
         get
         {
             return _scores.Sum(pair => pair.Value.PR_doc + pair.Value.PR_fb + pair.Value.PR_typo);
-        }        
+        }
     }
 
     double sumOfIs
@@ -55,26 +54,33 @@ public class FileGenerator
     {
         // 경로 설정
         string filePath = Path.Combine(_folderPath, $"{_repoName}.csv");
-        using StreamWriter writer = new StreamWriter(filePath);
+        var writer = new StreamWriter(filePath);
 
-        
+
         // 파일에 "# 점수 계산 기준…" 을 쓰면, 이 줄이 CSV 첫 줄로 나옵니다.
         writer.WriteLine("# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1");
         // CSV 헤더
         writer.WriteLine("User,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
 
-        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        string now = GetKoreanTimeString();
         var totals = _scores.Values.Select(s => s.total).ToList();
         double avg = totals.Count > 0 ? totals.Average() : 0.0;
         double max = totals.Count > 0 ? totals.Max() : 0.0;
         double min = totals.Count > 0 ? totals.Min() : 0.0;
-        writer.WriteLine($"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}");
+        writer.WriteLine($"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}"); 
+        writer.WriteLine($"# 참여자 수: {_scores.Count}명"); //참여자 수 출력 추가가
+
+        double totalActivity = sumOfPR + sumOfIs;
+        double prPercent = (totalActivity > 0) ? (sumOfPR / totalActivity * 100) : 0.0;
+        double isPercent = (totalActivity > 0) ? (sumOfIs / totalActivity * 100) : 0.0;
+        writer.WriteLine($"# 전체 PR 활동: {prPercent:F1}%, 전체 Issue 활동: {isPercent:F1}%"); // CSV에 요약
+        Console.WriteLine($"전체 PR 활동: {prPercent:F1}%, 전체 Issue 활동: {isPercent:F1}%"); // 콘솔 출력
 
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
             double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
-    double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
+            double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
             string line =
                 $"{id},{scores.PR_fb},{scores.PR_doc},{scores.PR_typo},{scores.IS_fb},{scores.IS_doc},{prRate:F1},{isRate:F1},{scores.total}";
             writer.WriteLine(line);
@@ -88,47 +94,64 @@ public class FileGenerator
         string filePath = Path.Combine(_folderPath, $"{_repoName}1.txt");
 
         // 테이블 생성
-        var headers = "UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
+        var headers = "Rank,UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
 
         // 각 칸의 너비 계산 (오른쪽 정렬을 위해 사용)
         int[] colWidths = headers.Select(h => h.Length).ToArray();
 
         var table = new ConsoleTable(headers);
 
+        var sortedScores = _scores.OrderByDescending(x => x.Value.total).ToList();
+        int currentRank = 1;
+        double? previousScore = null;
+        int count = 1;
+
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
+            if (previousScore != null && scores.total != previousScore)
+            {
+            currentRank = count;
+            }
             double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
             double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
             table.AddRow(
-                id.PadRight(colWidths[0]), // 글자는 왼쪽 정렬                   
-                scores.PR_fb.ToString().PadLeft(colWidths[1]), // 숫자는 오른쪽 정렬
-                scores.PR_doc.ToString().PadLeft(colWidths[2]),
-                scores.PR_typo.ToString().PadLeft(colWidths[3]),
-                scores.IS_fb.ToString().PadLeft(colWidths[4]),
-                scores.IS_doc.ToString().PadLeft(colWidths[5]),
-                $"{prRate:F1}".PadLeft(colWidths[6]),
-                $"{isRate:F1}".PadLeft(colWidths[7]),
-                scores.total.ToString().PadLeft(colWidths[8])
+                currentRank.ToString().PadLeft(colWidths[0]),
+                id.PadRight(colWidths[1]), // 글자는 왼쪽 정렬                   
+                scores.PR_fb.ToString().PadLeft(colWidths[2]), // 숫자는 오른쪽 정렬
+                scores.PR_doc.ToString().PadLeft(colWidths[3]),
+                scores.PR_typo.ToString().PadLeft(colWidths[4]),
+                scores.IS_fb.ToString().PadLeft(colWidths[5]),
+                scores.IS_doc.ToString().PadLeft(colWidths[6]),
+                $"{prRate:F1}".PadLeft(colWidths[7]),
+                $"{isRate:F1}".PadLeft(colWidths[8]),
+                scores.total.ToString().PadLeft(colWidths[9])
             );
+            
+            previousScore = scores.total;
+            count++;
         }
-        
+
         // 점수 기준 주석과 테이블 같이 출력
         var tableText = table.ToMinimalString();
 
         // 생성 정보 로그 계산
-        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        string now = GetKoreanTimeString();
         var totals = _scores.Values.Select(s => s.total).ToList();
         double avg = totals.Count > 0 ? totals.Average() : 0.0;
         double max = totals.Count > 0 ? totals.Max() : 0.0;
         double min = totals.Count > 0 ? totals.Min() : 0.0;
         string metaLine = $"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}";
+        string participantLine = $"# 참여자 수: {_scores.Count}명"; //참여자 수 출력 추
 
         var content = "# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1"
                     + Environment.NewLine
                     + metaLine
                     + Environment.NewLine
+                    + participantLine //추가
+                    + Environment.NewLine
                     + tableText;
+                    
 
         File.WriteAllText(filePath, content);
         Console.WriteLine($"{filePath} 생성됨");
@@ -231,12 +254,12 @@ public class FileGenerator
 
         var barPlot = plt.Add.Bars(bars);
 
-        string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        string now = GetKoreanTimeString();
         double avg = scores.Average();
         double max = scores.Max();
         double min = scores.Min();
 
-        string chartTitle = $"Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}";
+        string chartTitle = $"Repo: {_repoName}  Date: {now}";
         plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
         plt.Title($"Scores - {_repoName}" + "\n" + chartTitle);
         plt.XLabel("Total Score");
@@ -244,7 +267,7 @@ public class FileGenerator
 
         // x축 범위 설정
         plt.Axes.Bottom.Min = 0;
-        plt.Axes.Bottom.Max = scores.Max() * 2.5; 
+        plt.Axes.Bottom.Max = scores.Max() * 2.5;
 
         // 통계 정보 추가
         double maxScore = scores.Max();
@@ -258,15 +281,15 @@ public class FileGenerator
 
         var maxText = plt.Add.Text($"max: {maxScore:F1}", xRight, yTop);
         maxText.Alignment = Alignment.UpperRight;
-        maxText.Color = Colors.DarkGreen;
+        maxText.LabelFontColor = Colors.DarkGreen;
 
         var avgText = plt.Add.Text($"avg: {avgScore:F1}", xRight, yTop - ySpacing);
         avgText.Alignment = Alignment.UpperRight;
-        avgText.Color = Colors.DarkBlue;
+        avgText.LabelFontColor = Colors.DarkBlue;
 
         var minText = plt.Add.Text($"min: {minScore:F1}", xRight, yTop - ySpacing * 2);
         minText.Alignment = Alignment.UpperRight;
-        minText.Color = Colors.DarkRed;
+        minText.LabelFontColor = Colors.DarkRed;
 
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
         plt.SavePng(outputPath, 1080, 1920);
@@ -326,22 +349,24 @@ public class FileGenerator
         writer.WriteLine("        </ul>");
         writer.WriteLine("    </div>");
 
-        // 탭 버튼
+        // 탭 버튼 - Total을 첫 번째로 이동
         writer.WriteLine("    <div class='tab'>");
+        writer.WriteLine("        <button class='tablinks active' onclick=\"openTab(event, 'total')\">Total</button>");
         foreach (var (repoName, _) in _allRepos)
         {
             writer.WriteLine($"        <button class='tablinks' onclick=\"openTab(event, '{repoName}')\">{repoName}</button>");
         }
-        writer.WriteLine("        <button class='tablinks' onclick=\"openTab(event, 'total')\">Total</button>");
         writer.WriteLine("    </div>");
 
         // 각 저장소별 탭 내용
         foreach (var (repoName, scores) in _allRepos)
         {
             writer.WriteLine($"    <div id='{repoName}' class='tabcontent'>");
+            writer.WriteLine($"        <p>참여자 수: {scores.Count}명</p>"); //참여자 수 출력 추
             writer.WriteLine("        <table>");
             writer.WriteLine("            <thead>");
             writer.WriteLine("                <tr>");
+            writer.WriteLine("                    <th>순위</th>");
             writer.WriteLine("                    <th>User</th>");
             writer.WriteLine("                    <th>f/b_PR</th>");
             writer.WriteLine("                    <th>doc_PR</th>");
@@ -358,12 +383,25 @@ public class FileGenerator
             double repoSumOfPR = scores.Sum(pair => pair.Value.PR_doc + pair.Value.PR_fb + pair.Value.PR_typo);
             double repoSumOfIs = scores.Sum(pair => pair.Value.IS_doc + pair.Value.IS_fb);
 
+            int currentRank = 1; // 순위
+            double previousTotal = -1; // 이전 점수
+            int position = 0; // 현재 위치
+
             foreach (var (id, score) in scores.OrderByDescending(x => x.Value.total))
             {
+                position++;
+
+                // 이전 점수와 다르면 현재 순위 업데이트
+                if (score.total != previousTotal)
+                {
+                    currentRank = position;
+                }
+
                 double prRate = (repoSumOfPR > 0) ? (score.PR_doc + score.PR_fb + score.PR_typo) / repoSumOfPR * 100 : 0.0;
                 double isRate = (repoSumOfIs > 0) ? (score.IS_doc + score.IS_fb) / repoSumOfIs * 100 : 0.0;
 
                 writer.WriteLine("                <tr>");
+                writer.WriteLine($"                    <td class='rank'>{currentRank}</td>");
                 writer.WriteLine($"                    <td>{id}</td>");
                 writer.WriteLine($"                    <td>{score.PR_fb}</td>");
                 writer.WriteLine($"                    <td>{score.PR_doc}</td>");
@@ -374,6 +412,9 @@ public class FileGenerator
                 writer.WriteLine($"                    <td>{isRate:F1}%</td>");
                 writer.WriteLine($"                    <td class='total'>{score.total}</td>");
                 writer.WriteLine("                </tr>");
+
+                // 이전 점수 업데이트
+                previousTotal = score.total;
             }
 
             writer.WriteLine("            </tbody>");
@@ -408,6 +449,7 @@ public class FileGenerator
         writer.WriteLine("        <table>");
         writer.WriteLine("            <thead>");
         writer.WriteLine("                <tr>");
+        writer.WriteLine("                    <th>순위</th>");
         writer.WriteLine("                    <th>User</th>");
         writer.WriteLine("                    <th>f/b_PR</th>");
         writer.WriteLine("                    <th>doc_PR</th>");
@@ -419,9 +461,22 @@ public class FileGenerator
         writer.WriteLine("            </thead>");
         writer.WriteLine("            <tbody>");
 
+        int totalCurrentRank = 1;
+        double totalPreviousTotal = -1;
+        int totalPosition = 0;
+
         foreach (var (id, score) in totalScores.OrderByDescending(x => x.Value.total))
         {
+            totalPosition++;
+
+            // 이전 점수와 다르면 현재 순위 업데이트
+            if (score.total != totalPreviousTotal)
+            {
+                totalCurrentRank = totalPosition;
+            }
+
             writer.WriteLine("                <tr>");
+            writer.WriteLine($"                    <td class='rank'>{totalCurrentRank}</td>");
             writer.WriteLine($"                    <td>{id}</td>");
             writer.WriteLine($"                    <td>{score.PR_fb}</td>");
             writer.WriteLine($"                    <td>{score.PR_doc}</td>");
@@ -430,6 +485,9 @@ public class FileGenerator
             writer.WriteLine($"                    <td>{score.IS_doc}</td>");
             writer.WriteLine($"                    <td class='total'>{score.total}</td>");
             writer.WriteLine("                </tr>");
+
+            // 이전 점수 업데이트
+            totalPreviousTotal = score.total;
         }
 
         writer.WriteLine("            </tbody>");
@@ -459,5 +517,12 @@ public class FileGenerator
         writer.WriteLine("</html>");
 
         Console.WriteLine($"✅ HTML 보고서 생성 완료: {filePath}");
+    }
+
+    private static string GetKoreanTimeString()
+    {
+        TimeZoneInfo kstZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Seoul");
+        DateTime nowKST = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, kstZone);
+        return nowKST.ToString("yyyy-MM-dd HH:mm");
     }
 }

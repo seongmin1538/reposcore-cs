@@ -1,4 +1,4 @@
-﻿using Cocona;
+using Cocona;
 using System.Text.Json;          // JSON 파싱
 using System.IO;                 // File, Path
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Collections.Generic;
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
-    [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"result\")", ValueName = "Output directory")] string? output,
+    [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"output\")", ValueName = "Output directory")] string? output,
     [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")", ValueName = "Output format")] string[]? format,
     [Option('t', Description = "GitHub 액세스 토큰 입력", ValueName = "Github token")] string? token,
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
@@ -88,7 +88,6 @@ CoconaApp.Run((
 
     RepoDataCollector.CreateClient(token);
 
-    var totalScores = new Dictionary<string, UserScore>(); // 🆕 total score 집계용
     int totalRepos = repos.Length;
     int repoIndex = 0;
 
@@ -98,6 +97,9 @@ CoconaApp.Run((
         var parsed = TryParseRepoPath(repoPath);
         if (parsed == null) { failedRepos.Add(repoPath); continue; }
         var (owner, repo) = parsed.Value;
+        
+        RepoDataCollector.ValidateRepositoryExists(owner, repo);
+        
         var collector = new RepoDataCollector(owner, repo);
 
         if (progress)
@@ -136,6 +138,15 @@ CoconaApp.Run((
         try
         {
             var analyzer = new ScoreAnalyzer(userActivities, idToNameMap);
+            // C) ID→이름 치환: userInfoPath가 주어졌으면 매핑, 아니면 원래 ID 유지
+            var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
+            var finalScores = idToNameMap != null
+                ? rawScores.ToDictionary(
+                    kvp => idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
+                    kvp => kvp.Value,
+                    StringComparer.OrdinalIgnoreCase)
+                : rawScores;
+
             var scores = analyzer.Analyze();
             totalScores = analyzer.TotalAnalyze(scores);
 
@@ -146,16 +157,7 @@ CoconaApp.Run((
                     : checkFormat(format);
 
             string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
-
-            // C) ID→이름 치환: userInfoPath가 주어졌으면 매핑, 아니면 원래 ID 유지
-            var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
-            var finalScores = idToNameMap != null
-                ? rawScores.ToDictionary(
-                    kvp => idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
-                    kvp => kvp.Value,
-                    StringComparer.OrdinalIgnoreCase)
-                : rawScores;
-
+            var generator = new FileGenerator(finalScores, repo, outputDir);
 
              // 👉 totalScores에 병합
             foreach (var (user, score) in finalScores)
@@ -175,12 +177,6 @@ CoconaApp.Run((
                     );
                 }
             }
-            List<string> formats = (format == null || format.Length == 0)
-                ? new List<string> { "text", "csv", "chart", "html" }
-                : checkFormat(format);
-
-            string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
-            var generator = new FileGenerator(finalScores, repo, outputDir);
           
             if (formats.Contains("csv")) generator.GenerateCsv();
             if (formats.Contains("text")) generator.GenerateTable();
@@ -196,12 +192,11 @@ CoconaApp.Run((
         if (progress)
             PrintHelper.PrintInfo($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
     }
-    if (string.IsNullOrEmpty(singleUser) && totalScores.Count > 0)
+    if (string.IsNullOrEmpty(singleUser) && totalScores.Count > 0 && repos.Length > 1)
     {
-        string totalOutputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
-        string totalPath = Path.Combine(totalOutputDir, "total.txt");
-        var totalGen = new FileGenerator(totalScores, "total", totalOutputDir);
-        totalGen.GenerateTotalText(totalPath); // 이 메서드는 다음 단계에서 정의합니다.
+        string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
+        var totalGen = new FileGenerator(totalScores, "total", outputDir);
+        totalGen.GenerateChart();
     }
     // 전체 저장소 요약 테이블 출력
     if (summaries.Count > 0)
