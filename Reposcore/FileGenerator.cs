@@ -117,38 +117,50 @@ public class FileGenerator
  }
 
 
-     public void GenerateTable()
-     {
-         // 1) 통계 계산
-         var (avg, max, min) = CalcStats();
-         // 2) 헤더 문자열
-         string header =
-             "# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1"
-           + Environment.NewLine
-           + $"# Repo: {_repoName}  Avg:{avg:F1}  Max:{max:F1}  Min:{min:F1}  참여자:{_scores.Count}명";
- 
-         // 3) 템플릿 메서드 호출
-        GenerateOutput("1.txt", header, writer =>
-         {
-             var table = new ConsoleTable(
-                 "순위","User","f/b_PR","doc_PR","typo","f/b_issue","doc_issue","PR_rate","IS_rate","total"
-             );
-             int rank = 1, pos = 1; double? prev = null;
-             double sumPr = sumOfPR, sumIs = sumOfIs;
- 
-             foreach (var (id, s) in _scores.OrderByDescending(x => x.Value.total))
-             {
-                 if (prev != null && s.total != prev) rank = pos;
-                 double prRate = sumPr > 0 ? (s.PR_doc + s.PR_fb + s.PR_typo) / sumPr * 100 : 0;
-                 double isRate = sumIs > 0 ? (s.IS_doc + s.IS_fb) / sumIs * 100 : 0;
-                 table.AddRow(ScoreFormatter.ToTableRow(rank, id, s, prRate, isRate));
-                 prev = s.total; pos++;
-             }
- 
-             writer.WriteLine(table.ToMinimalString());
-        });
-     }
+     
+    public void GenerateTable()
+    {
+        // 출력할 파일 경로
+        string filePath = Path.Combine(_folderPath, $"{_repoName}1.txt");
 
+        // 테이블 생성
+        var headers = "Rank,UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
+
+        // 각 칸의 너비 계산 (오른쪽 정렬을 위해 사용)
+        int[] colWidths = headers.Select(h => h.Length).ToArray();
+
+        var table = new ConsoleTable(headers);
+
+        var sortedScores = _scores.OrderByDescending(x => x.Value.total).ToList();
+        int currentRank = 1;
+        double? previousScore = null;
+        int count = 1;
+
+        // 내용 작성
+        foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
+        {
+            if (previousScore != null && scores.total != previousScore)
+            {
+            currentRank = count;
+            }
+            double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
+            double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
+            table.AddRow(
+                currentRank.ToString().PadLeft(colWidths[0]),
+                id.PadRight(colWidths[1]), // 글자는 왼쪽 정렬                   
+                scores.PR_fb.ToString().PadLeft(colWidths[2]), // 숫자는 오른쪽 정렬
+                scores.PR_doc.ToString().PadLeft(colWidths[3]),
+                scores.PR_typo.ToString().PadLeft(colWidths[4]),
+                scores.IS_fb.ToString().PadLeft(colWidths[5]),
+                scores.IS_doc.ToString().PadLeft(colWidths[6]),
+                $"{prRate:F1}".PadLeft(colWidths[7]),
+                $"{isRate:F1}".PadLeft(colWidths[8]),
+                scores.total.ToString().PadLeft(colWidths[9])
+            );
+            
+            previousScore = scores.total;
+            count++;
+        }
 
         // 점수 기준 주석과 테이블 같이 출력
         var tableText = table.ToMinimalString();
