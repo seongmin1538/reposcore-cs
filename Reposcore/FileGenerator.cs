@@ -2,13 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Drawing;
 using ConsoleTables;
 using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.TickGenerators;
 using Alignment = ScottPlot.Alignment;
-using Color = System.Drawing.Color;
+
+public static class ScoreFormatter
+{
+    // CSV 한 줄 포맷
+    public static string ToCsvLine(string id, UserScore s, double prRate, double isRate) =>
+        $"{id},{s.PR_fb},{s.PR_doc},{s.PR_typo},{s.IS_fb},{s.IS_doc},{prRate:F1},{isRate:F1},{s.total}";
+
+    // ConsoleTable용 배열 포맷
+    public static object[] ToTableRow(int rank, string id, UserScore s, double prRate, double isRate) =>
+        new object[] { rank, id, s.PR_fb, s.PR_doc, s.PR_typo, s.IS_fb, s.IS_doc, $"{prRate:F1}", $"{isRate:F1}", s.total };
+}
 
 public class FileGenerator
 {
@@ -16,6 +25,7 @@ public class FileGenerator
     private readonly string _repoName;
     private readonly string _folderPath;
     private static List<(string RepoName, Dictionary<string, UserScore> Scores)> _allRepos = new();
+    private int ParticipantCount => _scores.Count; //참여자 수 프로퍼티 추가
 
     public FileGenerator(Dictionary<string, UserScore> repoScores, string repoName, string folderPath)
     {
@@ -37,6 +47,36 @@ public class FileGenerator
             Environment.Exit(1);
         }
     }
+    
+    private void EnsureDir() 
+    {
+        if (!Directory.Exists(_folderPath))
+            Directory.CreateDirectory(_folderPath);
+    }
+
+    private string GetPath(string ext) =>
+        Path.Combine(_folderPath, $"{_repoName}{ext}");
+
+    // ② 통계 계산
+    private (double avg, double max, double min) CalcStats() 
+    {
+        var list = _scores.Values.Select(s => s.total).ToList();
+        double avg = list.Any() ? list.Average() : 0;
+        double max = list.Any() ? list.Max()     : 0;
+        double min = list.Any() ? list.Min()     : 0;
+        return (avg, max, min);
+    }
+
+    // ③ 템플릿 메서드: 공통 생성 로직
+    private void GenerateOutput(string ext, string header, Action<TextWriter> body)
+    {
+        EnsureDir();
+        string path = GetPath(ext);
+        using var writer = new StreamWriter(path);
+        writer.WriteLine(header);
+        body(writer);
+        Console.WriteLine($"{path} 생성됨");
+    }
 
     double sumOfPR
     {
@@ -51,66 +91,77 @@ public class FileGenerator
         get { return _scores.Sum(pair => pair.Value.IS_doc + pair.Value.IS_fb); }
     }
 
-    public void GenerateCsv()
-    {
-        // 경로 설정
-        string filePath = Path.Combine(_folderPath, $"{_repoName}.csv");
-        using StreamWriter writer = new StreamWriter(filePath);
+     public void GenerateCsv()
+ {
+     // 1) 통계 계산
+     var (avg, max, min) = CalcStats();
+     // 2) 헤더 문자열
+     string header =
+         "# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1"
+       + Environment.NewLine
+       + $"# Repo: {_repoName}  Avg:{avg:F1}  Max:{max:F1}  Min:{min:F1}  참여자:{_scores.Count}명";
 
+     // 3) 템플릿 메서드 호출
+     GenerateOutput(".csv", header, writer =>
+     {
+         // --- 여기 한 줄만 추가하세요 (컬럼명) ---
+         writer.WriteLine("User,GitHubProfile,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
+         double sumPr = sumOfPR, sumIs = sumOfIs;
+         foreach (var (id, s) in _scores.OrderByDescending(x => x.Value.total))
+         {
+             double prRate = sumPr > 0 ? (s.PR_doc + s.PR_fb + s.PR_typo) / sumPr * 100 : 0;
+             double isRate = sumIs > 0 ? (s.IS_doc + s.IS_fb) / sumIs * 100 : 0;
+             string profileUrl = $"https://github.com/{id}";
+             writer.WriteLine(
+               $"{id},{profileUrl},{s.PR_fb},{s.PR_doc},{s.PR_typo}," +
+               $"{s.IS_fb},{s.IS_doc},{prRate:F1},{isRate:F1},{s.total}"
+             );
+         }
+     });
+ }
 
-        // 파일에 "# 점수 계산 기준…" 을 쓰면, 이 줄이 CSV 첫 줄로 나옵니다.
-        writer.WriteLine("# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1");
-        // CSV 헤더
-        writer.WriteLine("User,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total");
-
-        string now = GetKoreanTimeString();
-        var totals = _scores.Values.Select(s => s.total).ToList();
-        double avg = totals.Count > 0 ? totals.Average() : 0.0;
-        double max = totals.Count > 0 ? totals.Max() : 0.0;
-        double min = totals.Count > 0 ? totals.Min() : 0.0;
-        writer.WriteLine($"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}");
-
-        // 내용 작성
-        foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
-        {
-            double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
-            double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
-            string line =
-                $"{id},{scores.PR_fb},{scores.PR_doc},{scores.PR_typo},{scores.IS_fb},{scores.IS_doc},{prRate:F1},{isRate:F1},{scores.total}";
-            writer.WriteLine(line);
-        }
-
-        Console.WriteLine($"{filePath} 생성됨");
-    }
     public void GenerateTable()
     {
         // 출력할 파일 경로
         string filePath = Path.Combine(_folderPath, $"{_repoName}1.txt");
 
         // 테이블 생성
-        var headers = "UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
+        var headers = "Rank,UserId,f/b_PR,doc_PR,typo,f/b_issue,doc_issue,PR_rate,IS_rate,total".Split(',');
 
         // 각 칸의 너비 계산 (오른쪽 정렬을 위해 사용)
         int[] colWidths = headers.Select(h => h.Length).ToArray();
 
         var table = new ConsoleTable(headers);
 
+        var sortedScores = _scores.OrderByDescending(x => x.Value.total).ToList();
+        int currentRank = 1;
+        double? previousScore = null;
+        int count = 1;
+
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
         {
+            if (previousScore != null && scores.total != previousScore)
+            {
+            currentRank = count;
+            }
             double prRate = (sumOfPR > 0) ? (scores.PR_doc + scores.PR_fb + scores.PR_typo) / sumOfPR * 100 : 0.0;
             double isRate = (sumOfIs > 0) ? (scores.IS_doc + scores.IS_fb) / sumOfIs * 100 : 0.0;
             table.AddRow(
-                id.PadRight(colWidths[0]), // 글자는 왼쪽 정렬                   
-                scores.PR_fb.ToString().PadLeft(colWidths[1]), // 숫자는 오른쪽 정렬
-                scores.PR_doc.ToString().PadLeft(colWidths[2]),
-                scores.PR_typo.ToString().PadLeft(colWidths[3]),
-                scores.IS_fb.ToString().PadLeft(colWidths[4]),
-                scores.IS_doc.ToString().PadLeft(colWidths[5]),
-                $"{prRate:F1}".PadLeft(colWidths[6]),
-                $"{isRate:F1}".PadLeft(colWidths[7]),
-                scores.total.ToString().PadLeft(colWidths[8])
+                currentRank.ToString().PadLeft(colWidths[0]),
+                id.PadRight(colWidths[1]), // 글자는 왼쪽 정렬                   
+                scores.PR_fb.ToString().PadLeft(colWidths[2]), // 숫자는 오른쪽 정렬
+                scores.PR_doc.ToString().PadLeft(colWidths[3]),
+                scores.PR_typo.ToString().PadLeft(colWidths[4]),
+                scores.IS_fb.ToString().PadLeft(colWidths[5]),
+                scores.IS_doc.ToString().PadLeft(colWidths[6]),
+                $"{prRate:F1}".PadLeft(colWidths[7]),
+                $"{isRate:F1}".PadLeft(colWidths[8]),
+                scores.total.ToString().PadLeft(colWidths[9])
             );
+            
+            previousScore = scores.total;
+            count++;
         }
 
         // 점수 기준 주석과 테이블 같이 출력
@@ -123,12 +174,16 @@ public class FileGenerator
         double max = totals.Count > 0 ? totals.Max() : 0.0;
         double min = totals.Count > 0 ? totals.Min() : 0.0;
         string metaLine = $"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}";
+        string participantLine = $"# 참여자 수: {_scores.Count}명"; //참여자 수 출력 추
 
         var content = "# 점수 계산 기준: PR_fb*3, PR_doc*2, PR_typo*1, IS_fb*2, IS_doc*1"
                     + Environment.NewLine
                     + metaLine
                     + Environment.NewLine
+                    + participantLine //추가
+                    + Environment.NewLine
                     + tableText;
+                    
 
         File.WriteAllText(filePath, content);
         Console.WriteLine($"{filePath} 생성됨");
@@ -203,7 +258,7 @@ public class FileGenerator
             var userName = rankList.OrderBy(x => x.Score).ElementAt(i).User;
             if (_scores.TryGetValue(userName, out var userScore))
             {
-                string detailText = $"{userScore.total} (PR_fb {userScore.PR_fb} / PR_doc {userScore.PR_doc} / PR_typo {userScore.PR_typo} / IS_fb {userScore.IS_fb} / IS_doc {userScore.IS_doc})";
+                string detailText = $"{userScore.total} (P-F: {userScore.PR_fb}, D: {userScore.PR_doc}, T: {userScore.PR_typo} / I-F: {userScore.IS_fb}, D: {userScore.IS_doc})";
                 var txt = plt.Add.Text(detailText, textX, textY);
                 txt.Alignment = Alignment.MiddleLeft;
             }
@@ -222,7 +277,7 @@ public class FileGenerator
         double max = scores.Max();
         double min = scores.Min();
 
-        string chartTitle = $"Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}";
+        string chartTitle = $"Repo: {_repoName}  Date: {now}";
         plt.Axes.Left.TickGenerator = new NumericManual(positions, names);
         plt.Title($"Scores - {_repoName}" + "\n" + chartTitle);
         plt.XLabel("Total Score");
@@ -244,15 +299,15 @@ public class FileGenerator
 
         var maxText = plt.Add.Text($"max: {maxScore:F1}", xRight, yTop);
         maxText.Alignment = Alignment.UpperRight;
-        maxText.Color = Colors.DarkGreen;
+        maxText.LabelFontColor = Colors.DarkGreen;
 
         var avgText = plt.Add.Text($"avg: {avgScore:F1}", xRight, yTop - ySpacing);
         avgText.Alignment = Alignment.UpperRight;
-        avgText.Color = Colors.DarkBlue;
+        avgText.LabelFontColor = Colors.DarkBlue;
 
         var minText = plt.Add.Text($"min: {minScore:F1}", xRight, yTop - ySpacing * 2);
         minText.Alignment = Alignment.UpperRight;
-        minText.Color = Colors.DarkRed;
+        minText.LabelFontColor = Colors.DarkRed;
 
         string outputPath = Path.Combine(_folderPath, $"{_repoName}_chart.png");
         plt.SavePng(outputPath, 1080, 1920);
@@ -327,6 +382,7 @@ public class FileGenerator
         foreach (var (repoName, scores) in _allRepos)
         {
             writer.WriteLine($"    <div id='{repoName}' class='tabcontent'>");
+            writer.WriteLine($"        <p>참여자 수: {scores.Count}명</p>"); //참여자 수 출력 추
             writer.WriteLine("        <table>");
             writer.WriteLine("            <thead>");
             writer.WriteLine("                <tr>");

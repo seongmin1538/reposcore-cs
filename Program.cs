@@ -7,7 +7,6 @@ using System.Collections.Generic;
 CoconaApp.Run((
     [Argument(Description = "분석할 저장소. \"owner/repo\" 형식으로 공백을 구분자로 하여 여러 개 입력")] string[] repos,
     [Option('v', Description = "자세한 로그 출력을 활성화합니다.")] bool verbose,
-    [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"result\")", ValueName = "Output directory")] string? output,
     [Option('f', Description = "출력 형식 지정 (\"text\", \"csv\", \"chart\", \"html\", \"all\", default : \"all\")", ValueName = "Output format")] string[]? format,
     [Option('t', Description = "GitHub 액세스 토큰 입력", ValueName = "Github token")] string? token,
     [Option("include-user", Description = "결과에 포함할 사용자 ID 목록", ValueName = "Include user's id")] string[]? includeUsers,
@@ -16,6 +15,7 @@ CoconaApp.Run((
     [Option("until", Description = "이 날짜까지의 PR 및 이슈만 분석 (YYYY-MM-DD)", ValueName = "End date")] string? until,
     [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
     [Option("progress", Description = "API 호출 진행률을 표시합니다.")] bool progress,
+    [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"output\")", ValueName = "Output directory")] string output = "output",
     [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false,
     [Option("show-state-summary", Description = "PR/Issue 상태 요약을 표시합니다.")] bool showStateSummary = false
 ) =>
@@ -116,6 +116,8 @@ CoconaApp.Run((
                 Console.Out.Flush();
             }
             userActivities = collector.Collect(since: since, until: until, useCache: useCache);
+            var excludeIds = new HashSet<string> { "kyagrd", "kyahnu" };
+            userActivities = userActivities.Where(kv => !excludeIds.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
             if (progress)
             {
                 PrintHelper.PrintSuccess(" OK");
@@ -138,7 +140,29 @@ CoconaApp.Run((
         {
             var analyzer = new ScoreAnalyzer(userActivities, idToNameMap);
             var scores = analyzer.Analyze();
-            totalScores = analyzer.TotalAnalyze(scores);
+            var repoTotal = analyzer.TotalAnalyze(scores);
+
+            foreach (var kv in repoTotal)
+            {
+                if (totalScores.ContainsKey(kv.Key))
+                {
+                    var prev = totalScores[kv.Key];
+                    var curr = kv.Value;
+                    // 모든 필드를 합산해서 새 객체 생성
+                    totalScores[kv.Key] = new UserScore(
+                        prev.PR_fb + curr.PR_fb,
+                        prev.PR_doc + curr.PR_doc,
+                        prev.PR_typo + curr.PR_typo,
+                        prev.IS_fb + curr.IS_fb,
+                        prev.IS_doc + curr.IS_doc,
+                        prev.total + curr.total
+                    );
+                }
+                else
+                {
+                    totalScores[kv.Key] = kv.Value;
+                }
+            }
 
             if (string.IsNullOrEmpty(singleUser))
             {
@@ -146,13 +170,13 @@ CoconaApp.Run((
                     ? new List<string> { "text", "csv", "chart", "html" }
                     : checkFormat(format);
 
-                string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
+                string outputDir = output;
                 var generator = new FileGenerator(scores, repo, outputDir);
 
                 if (formats.Contains("csv")) generator.GenerateCsv();
                 if (formats.Contains("text")) generator.GenerateTable();
                 if (formats.Contains("chart")) generator.GenerateChart();
-                if (formats.Contains("html")) generator.GenerateHtml();
+                if (formats.Contains("html") && repoIndex == totalRepos) generator.GenerateHtml();
                 if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
             }
         }
@@ -167,9 +191,10 @@ CoconaApp.Run((
 
     if (string.IsNullOrEmpty(singleUser) && totalScores.Count > 0 && repos.Length > 1)
     {
-        string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
+        string outputDir = output;
         var totalGen = new FileGenerator(totalScores, "total", outputDir);
         totalGen.GenerateChart();
+        
     }
     // --user 옵션이 지정된 경우, 해당 사용자의 점수와 순위만 출력
     else if (!string.IsNullOrEmpty(singleUser) && totalScores.Count > 0)
