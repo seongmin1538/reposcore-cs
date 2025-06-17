@@ -226,7 +226,7 @@ public class FileGenerator
             var userName = rankList.OrderBy(x => x.Score).ElementAt(i).User;
             if (_scores.TryGetValue(userName, out var userScore))
             {
-                string detailText = $"{userScore.total} (PR_fb {userScore.PR_fb} / PR_doc {userScore.PR_doc} / PR_typo {userScore.PR_typo} / IS_fb {userScore.IS_fb} / IS_doc {userScore.IS_doc})";
+                string detailText = $"{userScore.total} (P-F: {userScore.PR_fb}, D: {userScore.PR_doc}, T: {userScore.PR_typo} / I-F: {userScore.IS_fb}, D: {userScore.IS_doc})";
                 var txt = plt.Add.Text(detailText, textX, textY);
                 txt.Alignment = Alignment.MiddleLeft;
             }
