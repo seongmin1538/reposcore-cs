@@ -70,6 +70,11 @@ public class FileGenerator
         writer.WriteLine($"# Repo: {_repoName}  Date: {now}  Avg: {avg:F1}  Max: {max:F1}  Min: {min:F1}"); 
         writer.WriteLine($"# 참여자 수: {_scores.Count}명"); //참여자 수 출력 추가가
 
+        double totalActivity = sumOfPR + sumOfIs;
+        double prPercent = (totalActivity > 0) ? (sumOfPR / totalActivity * 100) : 0.0;
+        double isPercent = (totalActivity > 0) ? (sumOfIs / totalActivity * 100) : 0.0;
+        writer.WriteLine($"# 전체 PR 활동: {prPercent:F1}%, 전체 Issue 활동: {isPercent:F1}%"); // CSV에 요약
+        Console.WriteLine($"전체 PR 활동: {prPercent:F1}%, 전체 Issue 활동: {isPercent:F1}%"); // 콘솔 출력
 
         // 내용 작성
         foreach (var (id, scores) in _scores.OrderByDescending(x => x.Value.total))
