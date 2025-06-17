@@ -355,7 +355,7 @@ public class FileGenerator
         writer.WriteLine("    </style>");
         writer.WriteLine("</head>");
         writer.WriteLine("<body>");
-        writer.WriteLine($"    <div class='timestamp'>생성 시간: {DateTime.Now:yyyy-MM-dd HH:mm:ss}</div>");
+        writer.WriteLine($"    <div class='timestamp'>생성 시간: {GetKoreanTimeString()}</div>");
 
         // 점수 계산 기준 정보
         writer.WriteLine("    <div class='score-info'>");
