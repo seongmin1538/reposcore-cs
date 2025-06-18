@@ -192,7 +192,7 @@ CoconaApp.Run((
         string outputDir = output;
         var totalGen = new FileGenerator(totalScores, "total", outputDir);
         totalGen.GenerateChart();
-        
+        totalGen.GenerateTable();
     }
     // --user 옵션이 지정된 경우, 해당 사용자의 점수와 순위만 출력
     else if (!string.IsNullOrEmpty(singleUser) && totalScores.Count > 0)
