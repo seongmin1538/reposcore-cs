@@ -371,6 +371,7 @@ public class FileGenerator
         foreach (var (repoName, scores) in _allRepos)
         {
             writer.WriteLine($"    <div id='{repoName}' class='tabcontent'>");
+            writer.WriteLine($"        <img src='{repoName}_chart.png' alt='{repoName} chart' style='max-width:100%; margin-bottom:20px;'>");
             writer.WriteLine($"        <p>참여자 수: {scores.Count}명</p>"); //참여자 수 출력 추
             writer.WriteLine("        <table>");
             writer.WriteLine("            <thead>");
@@ -455,6 +456,7 @@ public class FileGenerator
         }
 
         writer.WriteLine("    <div id='total' class='tabcontent'>");
+        writer.WriteLine("        <img src='total_chart.png' alt='Total chart' style='max-width:100%; margin-bottom:20px;'>");
         writer.WriteLine("        <table>");
         writer.WriteLine("            <thead>");
         writer.WriteLine("                <tr>");
