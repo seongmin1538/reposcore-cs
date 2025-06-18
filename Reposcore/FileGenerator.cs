@@ -7,6 +7,7 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.TickGenerators;
 using Alignment = ScottPlot.Alignment;
+using System.Drawing;
 
 public static class ScoreFormatter
 {
@@ -238,13 +239,33 @@ public class FileGenerator
         // Bar 데이터 생성
         var plt = new ScottPlot.Plot();
         var bars = new List<Bar>();
+
+        // 미리 정의된 색상 배열
+        var colors = new[]
+        {
+            new ScottPlot.Color(70, 130, 180),    // SteelBlue
+            new ScottPlot.Color(34, 139, 34),     // ForestGreen
+            new ScottPlot.Color(255, 165, 0),     // Orange
+            new ScottPlot.Color(128, 0, 128),     // Purple
+            new ScottPlot.Color(220, 20, 60),     // Crimson
+            new ScottPlot.Color(0, 128, 128),     // Teal
+            new ScottPlot.Color(255, 215, 0),     // Gold
+            new ScottPlot.Color(106, 90, 205),    // SlateBlue
+            new ScottPlot.Color(0, 255, 255),     // Cyan
+            new ScottPlot.Color(255, 0, 255)      // Magenta
+        };
+
+        // 저장소의 인덱스를 찾아 해당하는 색상 선택
+        int repoIndex = _allRepos.FindIndex(r => r.RepoName == _repoName);
+        var barColor = colors[repoIndex % colors.Length];
+
         for (int i = 0; i < scores.Length; i++)
         {
             bars.Add(new Bar
             {
                 Position = positions[i],
                 Value = scores[i],
-                FillColor = Colors.SteelBlue,
+                FillColor = barColor,
                 Orientation = Orientation.Horizontal,
                 Size = 5,
             });
