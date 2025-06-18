@@ -16,8 +16,7 @@ CoconaApp.Run((
     [Option("user-info", Description = "ID→이름 매핑 JSON/CSV 파일 경로")] string? userInfoPath,
     [Option("progress", Description = "API 호출 진행률을 표시합니다.")] bool progress,
     [Option('o', Description = "출력 디렉토리 경로를 지정합니다. (default : \"output\")", ValueName = "Output directory")] string output = "output",
-    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false,
-    [Option("show-state-summary", Description = "PR/Issue 상태 요약을 표시합니다.")] bool showStateSummary = false
+    [Option("use-cache", Description = "캐시된 데이터를 사용합니다.")] bool useCache = false
 ) =>
 {
     // 캐시 디렉토리 생성
@@ -82,12 +81,11 @@ CoconaApp.Run((
         PrintHelper.PrintWarning("출력 형식이 지정되지 않아 기본값 'all'이 사용됩니다.");
     }
 
-    var summaries = new List<(string RepoName, Dictionary<string, int> LabelCounts)>();
-    var failedRepos = new List<string>(); // ❗ 실패한 저장소 목록 수집용
-    var totalScores = new Dictionary<string, UserScore>();
+    var failedRepos = new List<string>();
 
     RepoDataCollector.CreateClient(token);
 
+    var totalScores = new Dictionary<string, UserScore>(); // 🆕 total score 집계용
     int totalRepos = repos.Length;
     int repoIndex = 0;
 
@@ -140,15 +138,6 @@ CoconaApp.Run((
         try
         {
             var analyzer = new ScoreAnalyzer(userActivities, idToNameMap);
-            // C) ID→이름 치환: userInfoPath가 주어졌으면 매핑, 아니면 원래 ID 유지
-            var rawScores = userActivities.ToDictionary(pair => pair.Key, pair => ScoreAnalyzer.FromActivity(pair.Value));
-            var finalScores = idToNameMap != null
-                ? rawScores.ToDictionary(
-                    kvp => idToNameMap.TryGetValue(kvp.Key, out var name) ? name : kvp.Key,
-                    kvp => kvp.Value,
-                    StringComparer.OrdinalIgnoreCase)
-                : rawScores;
-
             var scores = analyzer.Analyze();
             var repoTotal = analyzer.TotalAnalyze(scores);
 
@@ -179,34 +168,15 @@ CoconaApp.Run((
                 List<string> formats = (format == null || format.Length == 0)
                     ? new List<string> { "text", "csv", "chart", "html" }
                     : checkFormat(format);
-            }
-            string outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
-            var generator = new FileGenerator(finalScores, repo, outputDir);
 
-             // 👉 totalScores에 병합
-            foreach (var (user, score) in finalScores)
-            {
-                if (!totalScores.ContainsKey(user))
-                    totalScores[user] = score;
-                else
-                {
-                    var existing = totalScores[user];
-                    totalScores[user] = new UserScore(
-                        existing.PR_fb + score.PR_fb,
-                        existing.PR_doc + score.PR_doc,
-                        existing.PR_typo + score.PR_typo,
-                        existing.IS_fb + score.IS_fb,
-                        existing.IS_doc + score.IS_doc,
-                        existing.total + score.total
-                    );
-                }
+                string outputDir = output;
+                var generator = new FileGenerator(scores, repo, outputDir);
+
+                if (formats.Contains("csv")) generator.GenerateCsv();
+                if (formats.Contains("text")) generator.GenerateTable();
+                if (formats.Contains("chart")) generator.GenerateChart();
+                if (formats.Contains("html") && repoIndex == totalRepos) generator.GenerateHtml();
             }
-          
-            if (formats.Contains("csv")) generator.GenerateCsv();
-            if (formats.Contains("text")) generator.GenerateTable();
-            if (formats.Contains("chart")) generator.GenerateChart();
-            if (formats.Contains("html")) generator.GenerateHtml();
-            if (showStateSummary) generator.GenerateStateSummary(collector.StateSummary);
         }
         catch (Exception ex)
         {
@@ -216,19 +186,13 @@ CoconaApp.Run((
         if (progress)
             PrintHelper.PrintInfo($"▶ 처리 중 ({repoIndex}/{totalRepos}): {owner}/{repo} 완료");
     }
+
     if (string.IsNullOrEmpty(singleUser) && totalScores.Count > 0 && repos.Length > 1)
     {
         string outputDir = output;
         var totalGen = new FileGenerator(totalScores, "total", outputDir);
         totalGen.GenerateChart();
-    }
-    // 전체 저장소 요약 테이블 출력
-    if (summaries.Count > 0)
-    {
-        Console.WriteLine("\n📊 전체 저장소 요약 통계");
-        Console.WriteLine("----------------------------------------------------");
-        Console.WriteLine($"{"Repo",-30} {"B/F",5} {"Doc",5} {"typo",5}");
-        Console.WriteLine("----------------------------------------------------");
+        totalGen.GenerateTable();
     }
     // --user 옵션이 지정된 경우, 해당 사용자의 점수와 순위만 출력
     else if (!string.IsNullOrEmpty(singleUser) && totalScores.Count > 0)
@@ -270,11 +234,6 @@ CoconaApp.Run((
     }
 
 
-        foreach (var (repoName, counts) in summaries)
-        {
-            Console.WriteLine($"{repoName,-30} {counts["bug"],5} {counts["documentation"],5} {counts["typo"],5}");
-        }
-    }
     if (failedRepos.Count > 0)
     {
         PrintHelper.PrintError("\n❌ 처리되지 않은 저장소 목록:");

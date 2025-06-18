@@ -7,6 +7,7 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.TickGenerators;
 using Alignment = ScottPlot.Alignment;
+using System.Drawing;
 
 public static class ScoreFormatter
 {
@@ -252,13 +253,33 @@ public class FileGenerator
         // Bar 데이터 생성
         var plt = new ScottPlot.Plot();
         var bars = new List<Bar>();
+
+        // 미리 정의된 색상 배열
+        var colors = new[]
+        {
+            new ScottPlot.Color(70, 130, 180),    // SteelBlue
+            new ScottPlot.Color(34, 139, 34),     // ForestGreen
+            new ScottPlot.Color(255, 165, 0),     // Orange
+            new ScottPlot.Color(128, 0, 128),     // Purple
+            new ScottPlot.Color(220, 20, 60),     // Crimson
+            new ScottPlot.Color(0, 128, 128),     // Teal
+            new ScottPlot.Color(255, 215, 0),     // Gold
+            new ScottPlot.Color(106, 90, 205),    // SlateBlue
+            new ScottPlot.Color(0, 255, 255),     // Cyan
+            new ScottPlot.Color(255, 0, 255)      // Magenta
+        };
+
+        // 저장소의 인덱스를 찾아 해당하는 색상 선택
+        int repoIndex = _allRepos.FindIndex(r => r.RepoName == _repoName);
+        var barColor = colors[repoIndex % colors.Length];
+
         for (int i = 0; i < scores.Length; i++)
         {
             bars.Add(new Bar
             {
                 Position = positions[i],
                 Value = scores[i],
-                FillColor = Colors.SteelBlue,
+                FillColor = barColor,
                 Orientation = Orientation.Horizontal,
                 Size = 5,
             });
@@ -328,17 +349,6 @@ public class FileGenerator
         Console.WriteLine($"✅ 차트 생성 완료: {outputPath}");
     }
 
-    public void GenerateStateSummary(RepoStateSummary summary)
-    {
-        string filePath = Path.Combine(_folderPath, $"{_repoName}_state.txt");
-        using StreamWriter writer = new StreamWriter(filePath);
-        writer.WriteLine($"Merged PR: {summary.MergedPR}");
-        writer.WriteLine($"Unmerged PR: {summary.UnmergedPR}");
-        writer.WriteLine($"Open Issue: {summary.OpenIssue}");
-        writer.WriteLine($"Closed Issue: {summary.ClosedIssue}");
-        Console.WriteLine($"{filePath} 생성됨");
-    }
-
     public void GenerateHtml()
     {
         string filePath = Path.Combine(Path.GetDirectoryName(_folderPath)!, "index.html");
@@ -365,9 +375,11 @@ public class FileGenerator
         writer.WriteLine("        .tab button:hover { background-color: #ddd; }");
         writer.WriteLine("        .tab button.active { background-color: #ccc; }");
         writer.WriteLine("        .tabcontent { display: none; padding: 6px 12px; border: 1px solid #ccc; border-top: none; }");
+        writer.WriteLine("        .timestamp { color: #666; margin: 10px 0; text-align: right; }");
         writer.WriteLine("    </style>");
         writer.WriteLine("</head>");
         writer.WriteLine("<body>");
+        writer.WriteLine($"    <div class='timestamp'>생성 시간: {GetKoreanTimeString()}</div>");
 
         // 점수 계산 기준 정보
         writer.WriteLine("    <div class='score-info'>");
@@ -394,6 +406,7 @@ public class FileGenerator
         foreach (var (repoName, scores) in _allRepos)
         {
             writer.WriteLine($"    <div id='{repoName}' class='tabcontent'>");
+            writer.WriteLine($"        <img src='{repoName}_chart.png' alt='{repoName} chart' style='max-width:100%; margin-bottom:20px;'>");
             writer.WriteLine($"        <p>참여자 수: {scores.Count}명</p>"); //참여자 수 출력 추
             writer.WriteLine("        <table>");
             writer.WriteLine("            <thead>");
@@ -478,6 +491,7 @@ public class FileGenerator
         }
 
         writer.WriteLine("    <div id='total' class='tabcontent'>");
+        writer.WriteLine("        <img src='total_chart.png' alt='Total chart' style='max-width:100%; margin-bottom:20px;'>");
         writer.WriteLine("        <table>");
         writer.WriteLine("            <thead>");
         writer.WriteLine("                <tr>");
